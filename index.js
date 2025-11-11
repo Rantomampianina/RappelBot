@@ -67,7 +67,7 @@ app.get('/', (req, res) => {
                         <li>Rappels intelligents avec IA</li>
                         <li>Intégration Google Calendar</li>
                         <li>Commandes slash Discord</li>
-                        <li>Déployé sur Replit 🚀</li>
+                        <li>Déployé sur Koyeb 🚀</li>
                     </ul>
                 </div>
                 <p><a href="/health">📊 Vérifier le statut complet</a></p>
