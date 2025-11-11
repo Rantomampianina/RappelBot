@@ -61,7 +61,7 @@ app.get('/', (req, res) => {
             <div class="container">
                 <h1>🤖 RappelBot</h1>
                 <div class="status">
-                    <p class="online">✅ Bot Discord en ligne sur Replit</p>
+                    <p class="online">✅ Bot Discord en ligne sur Koyeb</p>
                     <p><strong>Fonctionnalités :</strong></p>
                     <ul>
                         <li>Rappels intelligents avec IA</li>
