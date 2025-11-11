@@ -1,0 +1,40 @@
+{
+  "fr": {
+    "rappel": "Rappel ajouté : **{text}** le **{date}** à **{time}**{google}",
+    "liste": "Tes rappels :",
+    "supprimer": "Rappel supprimé : **{text}**",
+    "complet": "Rappel marqué comme fait !",
+    "modifier": "Rappel modifié : **{old} → {new}**",
+    "config": "Configuration :",
+    "clean": "Historique effacé ! ({count} entrées)",
+    "googleYes": "Google Agenda activé !",
+    "googleNo": "Mode simple activé.",
+    "setChannel": "Alarme ici : {channel}",
+    "erreur": "Erreur interne.",
+    "aucun": "Aucun rappel.",
+    "indexInvalid": "Index invalide.",
+    "premiumOnly": "Fonction Premium (Patreon requis).",
+    "iaSuggest": "IA : Créneau libre **{slot}** pour **{duration}**. Créer ?",
+    "duplicate": "Duplicate détecté. Ignorer ?",
+    "priority": "Priorité **{level}**"
+  },
+  "en": {
+    "rappel": "Reminder added: **{text}** on **{date}** at **{time}**{google}",
+    "liste": "Your reminders:",
+    "supprimer": "Reminder deleted: **{text}**",
+    "complet": "Reminder marked as done!",
+    "modifier": "Reminder modified: **{old} → {new}**",
+    "config": "Configuration:",
+    "clean": "History cleared! ({count} entries)",
+    "googleYes": "Google Calendar enabled!",
+    "googleNo": "Simple mode enabled.",
+    "setChannel": "Alarms here: {channel}",
+    "erreur": "Internal error.",
+    "aucun": "No reminders.",
+    "indexInvalid": "Invalid index.",
+    "premiumOnly": "Premium feature (Patreon required).",
+    "iaSuggest": "AI: Free slot **{slot}** for **{duration}**. Create?",
+    "duplicate": "Duplicate detected. Skip?",
+    "priority": "Priority **{level}**"
+  }
+}

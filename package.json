@@ -1,0 +1,40 @@
+{
+  "name": "rappelbot",
+  "version": "1.0.0",
+  "description": "Bot Discord intelligent de rappels avec IA, multilinguisme et intégration Google Calendar",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "register": "node register-commands.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "bot", 
+    "rappel",
+    "ia",
+    "multilingual",
+    "i18n",
+    "google-calendar",
+    "productivity"
+  ],
+  "author": "Ranto",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "compromise": "^14.14.4",
+    "discord.js": "^14.23.2",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "fuzzysort": "^3.1.0",
+    "googleapis": "^164.1.0",
+    "i18next": "^25.6.0",
+    "i18next-http-backend": "^3.0.2",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.19.2"
+  }
+}
