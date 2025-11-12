@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const oauthRouter = require('./handlers/oauth');
 
 // ✅ SERVEUR EXPRESS POUR REPLIT
 const app = express();
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware de base
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/', oauthRouter);
 
 const client = new Client({
     intents: [
