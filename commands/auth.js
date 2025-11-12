@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { handleOAuthCode, handleManualAuth } = require('../handlers/oauth');
+const { handleOAuthCode, handleManualAuth } = require('../handlers/oauth-handler');
 
 module.exports = {
     data: new SlashCommandBuilder()

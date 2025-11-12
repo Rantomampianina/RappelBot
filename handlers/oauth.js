@@ -1,7 +1,6 @@
 const express = require('express');
 const GoogleCalendarService = require('../utils/google');
 const Config = require('../models/Config');
-const { EmbedBuilder } = require('discord.js');
 
 const router = express.Router();
 
@@ -272,31 +271,4 @@ router.get('/oauth/callback', async (req, res) => {
     }
 });
 
-// Commande pour entrer manuellement le code
-async function handleManualAuth(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
-    // ✅ CORRECTION : GoogleCalendarService avec G majuscule
-    const authUrl = GoogleCalendarService.generateAuthUrl(interaction.guildId);
-
-    const embed = new EmbedBuilder()
-        .setTitle('🔗 Connexion Google Calendar')
-        .setDescription(`**Étapes à suivre :**
-
-1. **Cliquez sur ce lien** pour autoriser l'accès :
-   [🔗 Autoriser Google Calendar](${authUrl})
-
-2. **Vous serez redirigé vers notre application**
-3. **Copiez le code** depuis l'URL (paramètre \`code=...\`)
-4. **Utilisez la commande** :
-   \`/auth code:VOTRE_CODE\``)
-        .setColor(0x4285F4)
-        .setFooter({ text: 'Le code expire après 10 minutes' });
-
-    await interaction.editReply({ embeds: [embed] });
-}
-
-module.exports = {
-    handleOAuthCode,
-    handleManualAuth
-};
+module.exports = router; // ✅ Exportez seulement le router
