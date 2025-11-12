@@ -35,15 +35,27 @@ async function handleOAuthCode(interaction, code, guildId) {
 async function handleManualAuth(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
+    const redirectUri = 'https://vicious-roxanne-product-4441a5d9.koyeb.app/auth/google/callback';
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?` + 
+        `client_id=${process.env.GOOGLE_CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_type=code` +
+        `&scope=https://www.googleapis.com/auth/calendar` +
+        `&access_type=offline` +
+        `&prompt=consent` +
+        `&state=${interaction.guildId}`;
+
     const embed = new EmbedBuilder()
         .setTitle('🔗 Connexion Google Calendar')
         .setDescription(`**Étapes à suivre :**
 
 1. **Cliquez sur ce lien** pour autoriser l'accès :
-   [🔗 Autoriser Google Calendar](https://accounts.google.com/o/oauth2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=http://localhost:3000&response_type=code&scope=https://www.googleapis.com/auth/calendar&access_type=offline&prompt=consent)
+   [🔗 Autoriser Google Calendar](${authUrl})
 
-2. **Copiez le code** depuis l'URL après autorisation
-   (il commence par "4/0A...")
+2. **Après autorisation, vous serez redirigé vers notre site**
+   - Copiez le code depuis la barre d'URL (paramètre \`code=...\`)
+   - Le code commence par "4/0A..."
 
 3. **Utilisez la commande** :
    \`/auth code:VOTRE_CODE\``)

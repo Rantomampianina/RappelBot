@@ -102,9 +102,6 @@ app.listen(PORT, () => {
     console.log(`🌐 Serveur Replit démarré sur le port ${PORT}`);
 });
 
-// ✅ LE RESTE DE VOTRE CODE EXISTANT...
-// [VOTRE CODE ACTUEL POUR LES COMMANDES, INTERACTIONS, ETC.]
-// ⬇️⬇️⬇️ COLLEZ ICI TOUT VOTRE CODE EXISTANT D'index.js ⬇️⬇️⬇️
 
 // Fonction pour enregistrer les commandes automatiquement
 async function registerCommands() {
