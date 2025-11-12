@@ -1,6 +1,7 @@
 const express = require('express');
 const GoogleCalendarService = require('../utils/google');
 const Config = require('../models/Config');
+const { EmbedBuilder } = require('discord.js');
 
 const router = express.Router();
 
@@ -270,8 +271,6 @@ router.get('/oauth/callback', async (req, res) => {
         `);
     }
 });
-
-// ... reste du code (health, routes, etc.)
 
 // Commande pour entrer manuellement le code
 async function handleManualAuth(interaction) {
