@@ -196,33 +196,58 @@ router.get('/oauth/callback', async (req, res) => {
                             }, 2000);
                         }).catch(err => {
                             console.error('Erreur copie:', err);
-                            alert('Erreur lors de la copie. Copiez manuellement: ' + code);
+                            // Fallback pour les navigateurs sans clipboard API
+                            const textArea = document.createElement('textarea');
+                            textArea.value = code;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            alert('Code copié !');
                         });
                     }
 
-                    // Redirection automatique après 15 secondes
+                    // Fermeture améliorée
                     let countdown = 15;
                     const countdownElement = document.getElementById('countdown');
-                    
+
                     const timer = setInterval(() => {
                         countdown--;
                         countdownElement.textContent = countdown;
-                        
+
                         if (countdown <= 0) {
                             clearInterval(timer);
-                            // Fermer la fenêtre ou rediriger
-                            if (window.history.length > 1) {
-                                window.close();
-                            } else {
-                                document.body.innerHTML = '<div class="container"><h2>✅ Authentification terminée</h2><p>Vous pouvez fermer cette fenêtre.</p></div>';
+                            // Tentative de fermeture
+                            try {
+                                // Méthode 1: Fermer la fenêtre si c'est un popup
+                                if (window.opener && !window.opener.closed) {
+                                    window.close();
+                                } 
+                                // Méthode 2: Rediriger si impossible de fermer
+                                else {
+                                    window.location.href = 'about:blank';
+                                    setTimeout(() => {
+                                        document.body.innerHTML = '<div style="padding: 40px; text-align: center;"><h2>✅ Authentification terminée</h2><p>Vous pouvez fermer cet onglet.</p></div>';
+                                    }, 100);
+                                }
+                            } catch (e) {
+                                // Méthode 3: Simple message
+                                document.body.innerHTML = '<div style="padding: 40px; text-align: center;"><h2>✅ Terminé</h2><p>Fermez cet onglet manuellement.</p></div>';
                             }
                         }
                     }, 1000);
 
-                    // Copie automatique au chargement (optionnel)
+                    // Copie automatique au chargement
                     setTimeout(() => {
                         copyCode();
-                    }, 500);
+                    }, 1000);
+
+                    // Fermeture manuelle avec Escape
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            window.close();
+                        }
+                    });
                 </script>
             </body>
             </html>

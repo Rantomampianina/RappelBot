@@ -17,13 +17,15 @@ class GoogleCalendarService {
         this.calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
     }
 
-    generateAuthUrl(guildId) {
+        generateAuthUrl(guildId) {
         console.log('🌐 Génération URL auth pour guild:', guildId);
+        
+        const uniqueParam = Date.now(); // Timestamp unique
         
         const authUrl = this.oauth2Client.generateAuthUrl({
             access_type: 'offline',
             scope: ['https://www.googleapis.com/auth/calendar'],
-            state: guildId,
+            state: `${guildId}_${uniqueParam}`, // ← State unique
             prompt: 'consent'
         });
         
