@@ -100,8 +100,8 @@ setInterval(() => {
 }, 5 * 60 * 1000); // Toutes les 5 minutes
 
 // Démarrer le serveur web
-app.listen(PORT, () => {
-    console.log(`🌐 Serveur Replit démarré sur le port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Bot déployé sur Railway - Port ${PORT}`);
 });
 
 

@@ -81,7 +81,7 @@ module.exports = {
 
             await rappel.save();
             
-            // Planifier l'alarme - CORRECTION ICI
+            // Planifier l'alarme
             planifierRappel(rappel);
 
             const typeLabel = isMeeting ? 'Réunion' : 'Rappel';
