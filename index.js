@@ -179,7 +179,7 @@ async function initializeAlarms() {
 }
 
 // Événement ready modifié
-client.once('ready', async () => {
+client.once('clientReady', async () => {
     console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
     console.log(`📊 ${client.guilds.cache.size} serveurs`);
 
