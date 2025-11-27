@@ -4,6 +4,72 @@ const Config = require('../models/Config');
 
 const router = express.Router();
 
+router.get('/', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>🤖 RappelBot - Railway</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    max-width: 800px; 
+                    margin: 0 auto; 
+                    padding: 40px 20px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    min-height: 100vh;
+                }
+                .container {
+                    background: rgba(255,255,255,0.1);
+                    padding: 30px;
+                    border-radius: 15px;
+                    backdrop-filter: blur(10px);
+                }
+                .status { 
+                    background: rgba(255,255,255,0.2); 
+                    padding: 20px; 
+                    border-radius: 10px; 
+                    margin: 20px 0; 
+                }
+                .online { color: #00ff00; font-weight: bold; }
+                a { color: #ffd700; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🤖 RappelBot</h1>
+                <div class="status">
+                    <p class="online">✅ Bot Discord en ligne sur Railway</p>
+                    <p><strong>URL :</strong> https://3ng5ghi8.up.railway.app</p>
+                    <p><strong>Fonctionnalités :</strong></p>
+                    <ul>
+                        <li>Rappels intelligents avec IA</li>
+                        <li>Intégration Google Calendar</li>
+                        <li>Commandes slash Discord</li>
+                        <li>Déployé sur Railway 🚀</li>
+                    </ul>
+                </div>
+                <p><a href="/health">📊 Vérifier le statut complet</a></p>
+                <p><a href="/oauth/callback?code=test&state=test">🔗 Tester OAuth</a></p>
+                <p><em>Le bot fonctionne en arrière-plan 24/7</em></p>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+router.get('/health', (req, res) => {
+    res.json({
+        status: 'online',
+        platform: 'Railway',
+        service: 'RappelBot OAuth Server',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 // Route de callback OAuth
 router.get('/oauth/callback', async (req, res) => {
     try {

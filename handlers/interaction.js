@@ -17,5 +17,32 @@ module.exports = async (interaction, client) => {
             await interaction.reply({ content: "Fait !", ephemeral: true });
             await interaction.message.edit({ components: [] });
         }
+        
+        // Dans la partie Google toggle, assure-toi de bien désactiver
+        if (interaction.customId === 'google_toggle') {
+            const config = await Config.findOne({ guildId: interaction.guildId });
+            
+            if (config) {
+                const newState = !config.useGoogleCalendar;
+                
+                // ✅ Si on désactive, supprimer aussi les credentials
+                const updateData = { useGoogleCalendar: newState };
+                if (!newState) {
+                    updateData.googleCredentials = undefined;  // ← Supprimer les tokens
+                }
+                
+                await Config.findOneAndUpdate(
+                    { guildId: interaction.guildId },
+                    updateData,
+                    { upsert: true, new: true }
+                );
+                
+                await interaction.reply({ 
+                    content: `✅ Google Calendar **${newState ? 'activé' : 'désactivé et déconnecté'}**`, 
+                    ephemeral: true 
+                });
+            }
+            return;
+        }
     }
 };

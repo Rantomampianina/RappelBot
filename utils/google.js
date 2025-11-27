@@ -18,19 +18,21 @@ class GoogleCalendarService {
     }
 
         generateAuthUrl(guildId) {
-        console.log('🌐 Génération URL auth pour guild:', guildId);
-        
-        const uniqueParam = Date.now(); // Timestamp unique
-        
-        const authUrl = this.oauth2Client.generateAuthUrl({
-            access_type: 'offline',
-            scope: ['https://www.googleapis.com/auth/calendar'],
-            state: `${guildId}_${uniqueParam}`, // ← State unique
-            prompt: 'consent'
-        });
-        
-        console.log('🔗 URL Auth générée:', authUrl);
-        return authUrl;
+    console.log('🌐 Génération URL auth pour guild:', guildId);
+    
+    // ✅ AJOUTER un paramètre unique pour forcer une nouvelle auth
+    const uniqueState = `${guildId}_${Date.now()}`;
+    
+    const authUrl = this.oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/calendar'],
+        state: uniqueState,  // ← State unique à chaque fois
+        prompt: 'consent',
+        include_granted_scopes: false  // ← Ne pas inclure les scopes existants
+    });
+    
+    console.log('🔗 URL Auth générée:', authUrl);
+    return authUrl;
     }
 
     async getTokensFromCode(code) {
