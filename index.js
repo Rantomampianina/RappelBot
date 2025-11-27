@@ -25,13 +25,14 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// ✅ ROUTES WEB POUR REPLIT
+// ✅ D'ABORD les routes individuelles
 app.get('/', (req, res) => {
+    console.log('📍 Route / appelée');
     res.send(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>🤖 RappelBot - Replit</title>
+            <title>🤖 RappelBot - Railway</title>
             <style>
                 body { 
                     font-family: Arial, sans-serif; 
@@ -63,13 +64,14 @@ app.get('/', (req, res) => {
             <div class="container">
                 <h1>🤖 RappelBot</h1>
                 <div class="status">
-                    <p class="online">✅ Bot Discord en ligne sur Koyeb</p>
+                    <p class="online">✅ Bot Discord en ligne sur Railway</p>
+                    <p><strong>URL :</strong> https://4tuxn0jj.up.railway.app</p>
                     <p><strong>Fonctionnalités :</strong></p>
                     <ul>
                         <li>Rappels intelligents avec IA</li>
                         <li>Intégration Google Calendar</li>
                         <li>Commandes slash Discord</li>
-                        <li>Déployé sur Koyeb 🚀</li>
+                        <li>Déployé sur Railway 🚀</li>
                     </ul>
                 </div>
                 <p><a href="/health">📊 Vérifier le statut complet</a></p>
@@ -83,14 +85,15 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({
         status: 'online',
-        platform: 'Replit',
-        bot: client?.user?.tag || 'starting...',
-        guilds: client?.guilds?.cache?.size || 0,
-        uptime: process.uptime(),
+        platform: 'Railway', 
+        bot: 'RappelBot',
         timestamp: new Date().toISOString(),
-        node_version: process.version
+        uptime: process.uptime()
     });
 });
+
+// ✅ ENSUITE le routeur OAuth
+app.use('/', oauthRouter);
 
 // ✅ KEEP-ALIVE POUR REPLIT (important!)
 setInterval(() => {
