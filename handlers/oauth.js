@@ -42,7 +42,7 @@ router.get('/', (req, res) => {
                 <h1>🤖 RappelBot</h1>
                 <div class="status">
                     <p class="online">✅ Bot Discord en ligne sur Railway</p>
-                    <p><strong>URL :</strong> https://3ng5ghi8.up.railway.app</p>
+                    <p><strong>URL :</strong> https://4tuxn0jj.up.railway.app</p>
                     <p><strong>Fonctionnalités :</strong></p>
                     <ul>
                         <li>Rappels intelligents avec IA</li>
