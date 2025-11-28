@@ -6,26 +6,15 @@ const path = require('path');
 const express = require('express');
 const oauthRouter = require('./handlers/oauth');
 
-// ✅ SERVEUR EXPRESS POUR REPLIT
+// ✅ SERVEUR EXPRESS POUR RAILWAY
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware de base
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/', oauthRouter);
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMessages, 
-        GatewayIntentBits.MessageContent
-    ]
-});
-
-client.commands = new Collection();
-
-// ✅ D'ABORD les routes individuelles
+// ✅ ROUTES STATIQUES EN PREMIER
 app.get('/', (req, res) => {
     console.log('📍 Route / appelée');
     res.send(`
@@ -75,6 +64,7 @@ app.get('/', (req, res) => {
                     </ul>
                 </div>
                 <p><a href="/health">📊 Vérifier le statut complet</a></p>
+                <p><a href="/auth">🔗 Authentification Google</a></p>
                 <p><em>Le bot fonctionne en arrière-plan 24/7</em></p>
             </div>
         </body>
@@ -88,27 +78,213 @@ app.get('/health', (req, res) => {
         platform: 'Railway', 
         bot: 'RappelBot',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        guilds: client?.guilds?.cache?.size || 0
     });
 });
 
-// ✅ ENSUITE le routeur OAuth
+// ✅ ROUTES DE DÉBOGAGE
+app.get('/debug/routes', (req, res) => {
+    const routes = [];
+    app._router.stack.forEach(middleware => {
+        if(middleware.route) {
+            routes.push({
+                path: middleware.route.path,
+                methods: Object.keys(middleware.route.methods)
+            });
+        } else if(middleware.name === 'router') {
+            // Routes du routeur OAuth
+            middleware.handle.stack.forEach(handler => {
+                if(handler.route) {
+                    routes.push({
+                        path: handler.route.path,
+                        methods: Object.keys(handler.route.methods),
+                        source: 'oauthRouter'
+                    });
+                }
+            });
+        }
+    });
+    res.json({ routes, total: routes.length });
+});
+
+// ✅ ROUTER OAUTH APRÈS LES ROUTES STATIQUES
 app.use('/', oauthRouter);
 
-// ✅ KEEP-ALIVE POUR REPLIT (important!)
+// ✅ ROUTE 404 DOIT ÊTRE LA DERNIÈRE
+app.use('*', (req, res) => {
+    res.status(404).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Page non trouvée - RappelBot</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                h1 { color: #ff4444; }
+            </style>
+        </head>
+        <body>
+            <h1>❌ Page non trouvée</h1>
+            <p>La page que vous recherchez n'existe pas.</p>
+            <p><a href="/">Retour à l'accueil</a></p>
+        </body>
+        </html>
+    `);
+});
+
+// Démarrer le serveur web
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Serveur Express démarré sur le port ${PORT}`);
+    console.log(`🌐 URL: https://4tuxn0jj.up.railway.app`);
+});
+
+// ✅ CLIENT DISCORD
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.MessageContent
+    ]
+});
+
+client.commands = new Collection();
+
+// ✅ KEEP-ALIVE POUR RAILWAY
 setInterval(() => {
     if (client && client.uptime) {
         console.log('🔄 Keep-alive - Bot actif depuis', Math.floor(client.uptime / 60000), 'minutes');
     }
-}, 5 * 60 * 1000); // Toutes les 5 minutes
+    
+    // Ping health endpoint pour éviter le sleep
+    fetch(`https://4tuxn0jj.up.railway.app/health`)
+        .then(() => console.log('✅ Health check réussi'))
+        .catch(err => console.log('❌ Health check échoué:', err.message));
+}, 5 * 60 * 1000);
 
-// Démarrer le serveur web
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Bot déployé sur Railway - Port ${PORT}`);
+// ✅ REFACTORISATION DE LA GESTION DES INTERACTIONS
+async function handleButtonInteraction(interaction) {
+    const [action, rappelId] = interaction.customId.split('_');
+    
+    try {
+        // Boutons de rappels
+        if (action === 'complete') {
+            const Rappel = require('./models/Rappel');
+            await Rappel.findByIdAndDelete(rappelId);
+            await interaction.reply({ content: '✅ Rappel marqué comme fait !', ephemeral: true });
+            return;
+        }
+        
+        if (action === 'snooze') {
+            const Rappel = require('./models/Rappel');
+            const rappel = await Rappel.findById(rappelId);
+            if (rappel) {
+                const [hours, minutes] = rappel.time.split(':');
+                const newTime = new Date();
+                newTime.setHours(parseInt(hours), parseInt(minutes) + 5);
+                const newTimeStr = `${newTime.getHours().toString().padStart(2, '0')}:${newTime.getMinutes().toString().padStart(2, '0')}`;
+                
+                rappel.time = newTimeStr;
+                rappel.completed = false;
+                await rappel.save();
+                
+                const { planifierRappel } = require('./handlers/alarm');
+                planifierRappel(rappel);
+                
+                await interaction.reply({ content: '⏸️ Rappel reporté de 5 minutes !', ephemeral: true });
+            }
+            return;
+        }
+
+        // Boutons Google Calendar
+        if (interaction.customId.startsWith('google_') || interaction.customId.startsWith('create_google_')) {
+            const { handleGoogleButton } = require('./handlers/google');
+            await handleGoogleButton(interaction);
+            return;
+        }
+        
+        if (interaction.customId === 'google_close') {
+            const { handleGoogleClose } = require('./handlers/google');
+            await handleGoogleClose(interaction);
+            return;
+        }
+
+        // Boutons de configuration
+        if (interaction.customId === 'google_toggle') {
+            const Config = require('./models/Config');
+            let config = await Config.findOne({ guildId: interaction.guildId });
+            if (!config) {
+                config = new Config({ guildId: interaction.guildId });
+            }
+            config.useGoogleCalendar = !config.useGoogleCalendar;
+            await config.save();
+            await interaction.reply({ 
+                content: `✅ Google Calendar **${config.useGoogleCalendar ? 'activé' : 'désactivé'}**`, 
+                ephemeral: true 
+            });
+            return;
+        }
+
+        if (interaction.customId === 'google_disconnect') {
+            const Config = require('./models/Config');
+            await Config.findOneAndUpdate(
+                { guildId: interaction.guildId },
+                { 
+                    useGoogleCalendar: false,
+                    $unset: { googleCredentials: 1 }
+                }
+            );
+            await interaction.reply({ 
+                content: '✅ Google Calendar déconnecté avec succès', 
+                ephemeral: true 
+            });
+            return;
+        }
+        
+        // Si on arrive ici, le bouton n'est pas reconnu
+        await interaction.reply({ content: '❌ Action non reconnue', ephemeral: true });
+        
+    } catch (error) {
+        console.error('❌ Erreur bouton:', error);
+        await interaction.reply({ 
+            content: '❌ Erreur lors du traitement du bouton', 
+            ephemeral: true 
+        });
+    }
+}
+
+// ✅ GESTION DES INTERACTIONS SIMPLIFIÉE
+client.on('interactionCreate', async (interaction) => {
+    try {
+        if (interaction.isButton()) {
+            await handleButtonInteraction(interaction);
+            return;
+        }
+
+        if (interaction.isCommand()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command) {
+                await interaction.reply({ 
+                    content: '❌ Commande non trouvée', 
+                    ephemeral: true 
+                });
+                return;
+            }
+            
+            await command.execute(interaction);
+        }
+    } catch (error) {
+        console.error('❌ Erreur interaction:', error);
+        const errorMessage = '❌ Une erreur est survenue lors du traitement.';
+        
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, ephemeral: true });
+        } else {
+            await interaction.reply({ content: errorMessage, ephemeral: true });
+        }
+    }
 });
 
-
-// Fonction pour enregistrer les commandes automatiquement
+// ✅ FONCTIONS EXISTANTES (conservées)
 async function registerCommands() {
     try {
         console.log('🔄 Enregistrement automatique des commandes...');
@@ -147,8 +323,6 @@ async function registerCommands() {
     }
 }
 
-
-// Fonction pour initialiser les alarmes après la connexion DB
 async function initializeAlarms() {
     try {
         console.log('🔔 Initialisation des alarmes...');
@@ -156,7 +330,6 @@ async function initializeAlarms() {
         const Rappel = require('./models/Rappel');
         const { setupAlarmChecker, planifierRappel } = require('./handlers/alarm');
         
-        // Attendre que la connexion DB soit vraiment établie
         if (mongoose.connection.readyState !== 1) {
             console.log('⏳ En attente de la connexion DB...');
             await new Promise(resolve => {
@@ -181,122 +354,21 @@ async function initializeAlarms() {
     }
 }
 
-// Événement ready modifié
+// ✅ ÉVÉNEMENT READY
 client.once('clientReady', async () => {
     console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
     console.log(`📊 ${client.guilds.cache.size} serveurs`);
 
     try {
-        // Initialiser les alarmes
         await initializeAlarms();
-        
-        // Statut
         client.user.setActivity('/rappel | Rappels intelligents', { type: 'WATCHING' });
-        
+        console.log('🎯 Bot complètement initialisé et prêt !');
     } catch (error) {
         console.error('❌ Erreur initialisation:', error);
     }
 });
 
-// Gestion des interactions COMPLÈTE
-client.on('interactionCreate', async (interaction) => {
-    try {
-        if (interaction.isButton()) {
-            const [action, rappelId] = interaction.customId.split('_');
-            
-            // Boutons existants pour les rappels
-            if (action === 'complete') {
-                const Rappel = require('./models/Rappel');
-                await Rappel.findByIdAndDelete(rappelId);
-                await interaction.reply({ content: '✅ Rappel marqué comme fait !', ephemeral: true });
-                return;
-            }
-            
-            if (action === 'snooze') {
-                const Rappel = require('./models/Rappel');
-                const rappel = await Rappel.findById(rappelId);
-                if (rappel) {
-                    const [hours, minutes] = rappel.time.split(':');
-                    const newTime = new Date();
-                    newTime.setHours(parseInt(hours), parseInt(minutes) + 5);
-                    const newTimeStr = `${newTime.getHours().toString().padStart(2, '0')}:${newTime.getMinutes().toString().padStart(2, '0')}`;
-                    
-                    rappel.time = newTimeStr;
-                    rappel.completed = false;
-                    await rappel.save();
-                    
-                    const { planifierRappel } = require('./handlers/alarm');
-                    planifierRappel(rappel);
-                    
-                    await interaction.reply({ content: '⏸️ Rappel reporté de 5 minutes !', ephemeral: true });
-                }
-                return;
-            }
-
-            // NOUVEAU : Boutons Google Calendar
-            if (interaction.customId.startsWith('google_') || interaction.customId.startsWith('create_google_')) {
-                const { handleGoogleButton } = require('./handlers/google');
-                await handleGoogleButton(interaction);
-                return;
-            }
-            
-            if (interaction.customId === 'google_close') {
-                const { handleGoogleClose } = require('./handlers/google');
-                await handleGoogleClose(interaction);
-                return;
-            }
-
-            // Boutons de configuration
-            if (interaction.customId === 'google_toggle') {
-                const Config = require('./models/Config');
-                const config = await Config.findOne({ guildId: interaction.guildId });
-                if (config) {
-                    config.useGoogleCalendar = !config.useGoogleCalendar;
-                    await config.save();
-                    await interaction.reply({ 
-                        content: `✅ Google Calendar **${config.useGoogleCalendar ? 'activé' : 'désactivé'}**`, 
-                        ephemeral: true 
-                    });
-                }
-                return;
-            }
-
-            if (interaction.customId === 'google_disconnect') {
-                const Config = require('./models/Config');
-                await Config.findOneAndUpdate(
-                    { guildId: interaction.guildId },
-                    { 
-                        useGoogleCalendar: false,
-                        $unset: { googleCredentials: 1 }
-                    }
-                );
-                await interaction.reply({ 
-                    content: '✅ Google Calendar déconnecté avec succès', 
-                    ephemeral: true 
-                });
-                return;
-            }
-        }
-
-        // Commandes slash
-        if (interaction.isCommand()) {
-            const command = client.commands.get(interaction.commandName);
-            if (!command) return;
-            await command.execute(interaction);
-        }
-    } catch (error) {
-        console.error('❌ Erreur interaction:', error);
-        const errorMessage = '❌ Une erreur est survenue lors du traitement.';
-        
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: errorMessage, ephemeral: true });
-        } else {
-            await interaction.reply({ content: errorMessage, ephemeral: true });
-        }
-    }
-});
-
-// Gestion des erreurs
+// ✅ GESTION DES ERREURS
 client.on('error', (error) => {
     console.error('❌ Erreur Client Discord:', error);
 });
@@ -309,15 +381,18 @@ process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
 });
 
-// Gestion arrêt
+// ✅ GESTION ARRÊT
 process.on('SIGINT', async () => {
     console.log('🛑 Arrêt du bot...');
     client.destroy();
     await mongoose.connection.close();
-    process.exit(0);
+    server.close(() => {
+        console.log('✅ Serveur Express arrêté');
+        process.exit(0);
+    });
 });
 
-// Connexion DB avec meilleure gestion
+// ✅ CONNEXION DATABASE
 async function connectDatabase() {
     try {
         await mongoose.connect(process.env.MONGODB_URI, {
@@ -332,26 +407,23 @@ async function connectDatabase() {
     }
 }
 
-// DÉMARRAGE AUTOMATIQUE AMÉLIORÉ
+// ✅ DÉMARRAGE AUTOMATIQUE
 async function startBot() {
     try {
         console.log('🚀 Démarrage du bot...');
         
-        // 1. Enregistrer les commandes d'abord
         const commandsRegistered = await registerCommands();
         if (!commandsRegistered) {
             console.log('❌ Échec enregistrement commandes, arrêt...');
             process.exit(1);
         }
         
-        // 2. Connecter la base de données
         const dbConnected = await connectDatabase();
         if (!dbConnected) {
             console.log('❌ Échec connexion DB, arrêt...');
             process.exit(1);
         }
         
-        // 3. Connecter le bot Discord
         await client.login(process.env.TOKEN);
         
     } catch (error) {
