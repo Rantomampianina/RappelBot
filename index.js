@@ -6,6 +6,96 @@ const path = require('path');
 const express = require('express');
 const oauthRouter = require('./handlers/oauth');
 
+// Configuration GitHub Codespaces
+const CODESPACE_NAME = process.env.CODESPACE_NAME;
+const GITHUB_CODESPACES_PORT = process.env.GITHUB_CODESPACES_PORT || 3000;
+
+console.log(`🚀 RappelBot démarré sur GitHub Codespaces: ${CODESPACE_NAME}`);
+
+// Health check amélioré pour Codespaces
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        platform: 'GitHub Codespaces',
+        codespace: CODESPACE_NAME,
+        url: `https://${CODESPACE_NAME}-3000.app.github.dev`,
+        bot: client?.user?.tag || 'starting',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Route racine optimisée
+app.get('/', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>🤖 RappelBot - GitHub Codespaces</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 40px 20px;
+                    background: linear-gradient(135deg, #2ea44f 0%, #1a7f37 100%);
+                    color: white;
+                    min-height: 100vh;
+                }
+                .container {
+                    background: rgba(255,255,255,0.1);
+                    padding: 30px;
+                    border-radius: 15px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255,255,255,0.2);
+                }
+                .status {
+                    background: rgba(255,255,255,0.2);
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin: 20px 0;
+                }
+                .online { color: #00ff00; font-weight: bold; }
+                a {
+                    color: #ffd700;
+                    text-decoration: none;
+                    font-weight: 500;
+                }
+                a:hover { text-decoration: underline; }
+                code {
+                    background: rgba(0,0,0,0.3);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-family: 'Monaco', 'Menlo', monospace;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🤖 RappelBot</h1>
+                <div class="status">
+                    <p class="online">✅ Bot Discord en ligne sur GitHub Codespaces</p>
+                    <p><strong>URL :</strong> https://${CODESPACE_NAME}-3000.app.github.dev</p>
+                    <p><strong>Statut :</strong> 24/7 actif - Hébergement GitHub 🚀</p>
+                    <p><strong>Fonctionnalités :</strong></p>
+                    <ul>
+                        <li>Rappels intelligents avec IA</li>
+                        <li>Intégration Google Calendar</li>
+                        <li>Commandes slash Discord</li>
+                        <li>Base de données MongoDB</li>
+                        <li>Déployé sur GitHub Codespaces - 100% gratuit</li>
+                    </ul>
+                </div>
+                <p><a href="/health">📊 Vérifier le statut complet</a></p>
+                <p><a href="/auth">🔗 Authentification Google</a></p>
+                <p><em>Le bot fonctionne en arrière-plan 24/7 sans interruption</em></p>
+                <p><small>Codespace: <code>${CODESPACE_NAME}</code></small></p>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
 // ✅ SERVEUR EXPRESS POUR RAILWAY
 const app = express();
 const PORT = process.env.PORT || 3000;
