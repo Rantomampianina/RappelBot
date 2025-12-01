@@ -7,13 +7,22 @@ const express = require('express');
 const oauthRouter = require('./handlers/oauth');
 
 
-// Health check requis pour Fly.io
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
+    const health = {
+        status: 'healthy',
         timestamp: new Date().toISOString(),
-        fly_region: process.env.FLY_REGION || 'local'
-    });
+        service: 'rappelbot',
+        uptime: process.uptime(),
+        discord: client?.readyAt ? 'connected' : 'connecting',
+        memory: {
+            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+        }
+    };
+    
+    // Réponse rapide pour UptimeRobot
+    res.set('Cache-Control', 'no-cache');
+    res.json(health);
 });
 
 // Route racine optimisée
@@ -229,17 +238,36 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// ✅ KEEP-ALIVE POUR RAILWAY
-setInterval(() => {
-    if (client && client.uptime) {
-        console.log('🔄 Keep-alive - Bot actif depuis', Math.floor(client.uptime / 60000), 'minutes');
-    }
+// FONCTION ANTI-SLEEP SYSTEM
+function setupAntiSleep() {
+    const RENDER_URL = `https://${process.env.RENDER_SERVICE_NAME || 'rappelbot'}.onrender.com`;
     
-    // Ping health endpoint pour éviter le sleep
-    fetch(`https://4tuxn0jj.up.railway.app/health`)
-        .then(() => console.log('✅ Health check réussi'))
-        .catch(err => console.log('❌ Health check échoué:', err.message));
-}, 5 * 60 * 1000);
+    // 1. Ping interne (actif quand le bot tourne)
+    setInterval(async () => {
+        try {
+            const response = await fetch(`${RENDER_URL}/health`);
+            if (response.ok) {
+                console.log('✅ Auto-ping réussi');
+            }
+        } catch (error) {
+            console.log('⚠️ Auto-ping échoué (normal si bot vient de démarrer)');
+        }
+    }, 4.5 * 60 * 1000); // 4.5 minutes (plus rapide que UptimeRobot)
+    
+    // 2. Logs de monitoring
+    setInterval(() => {
+        if (client && client.uptime) {
+            const uptimeMinutes = Math.floor(client.uptime / 60000);
+            const memoryUsage = process.memoryUsage();
+            console.log(`📊 Stats: ${uptimeMinutes}min actif | RAM: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`);
+        }
+    }, 10 * 60 * 1000); // Toutes les 10 minutes
+    
+    console.log('🛡️ Système anti-sleep activé');
+}
+
+// Appeler au démarrage
+setupAntiSleep();
 
 // ✅ REFACTORISATION DE LA GESTION DES INTERACTIONS
 async function handleButtonInteraction(interaction) {
