@@ -1,5 +1,5 @@
 # fly.toml
-app = "rappelbot-votre-nom"
+app = "RappelBot"
 primary_region = "par"
 
 [build]
