@@ -66,8 +66,7 @@ app.get('/', (req, res) => {
             <div class="container">
                 <h1>🤖 RappelBot</h1>
                 <div class="status">
-                    <p class="online">✅ Bot Discord en ligne sur GitHub Codespaces</p>
-                    <p><strong>URL :</strong> https://${CODESPACE_NAME}-3000.app.github.dev</p>
+                    <p class="online">✅ Bot Discord en ligne sur Render</p>
                     <p><strong>Statut :</strong> 24/7 actif - Hébergement GitHub 🚀</p>
                     <p><strong>Fonctionnalités :</strong></p>
                     <ul>
@@ -90,7 +89,7 @@ app.get('/', (req, res) => {
 
 // ✅ SERVEUR EXPRESS POUR RAILWAY
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 // Middleware de base
 app.use(express.json());
@@ -217,7 +216,6 @@ app.use('*', (req, res) => {
 // Démarrer le serveur web
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Serveur Express démarré sur le port ${PORT}`);
-    console.log(`🌐 URL: https://4tuxn0jj.up.railway.app`);
 });
 
 // ✅ CLIENT DISCORD
