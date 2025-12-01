@@ -6,6 +6,10 @@ const path = require('path');
 const express = require('express');
 const oauthRouter = require('./handlers/oauth');
 
+// ✅ SERVEUR EXPRESS POUR RENDER
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 
 app.get('/health', (req, res) => {
     const health = {
@@ -96,9 +100,6 @@ app.get('/', (req, res) => {
     `);
 });
 
-// ✅ SERVEUR EXPRESS POUR RAILWAY
-const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Middleware de base
 app.use(express.json());
