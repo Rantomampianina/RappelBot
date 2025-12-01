@@ -6,21 +6,13 @@ const path = require('path');
 const express = require('express');
 const oauthRouter = require('./handlers/oauth');
 
-// Configuration GitHub Codespaces
-const CODESPACE_NAME = process.env.CODESPACE_NAME;
-const GITHUB_CODESPACES_PORT = process.env.GITHUB_CODESPACES_PORT || 3000;
 
-console.log(`🚀 RappelBot démarré sur GitHub Codespaces: ${CODESPACE_NAME}`);
-
-// Health check amélioré pour Codespaces
+// Health check requis pour Fly.io
 app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        platform: 'GitHub Codespaces',
-        codespace: CODESPACE_NAME,
-        url: `https://${CODESPACE_NAME}-3000.app.github.dev`,
-        bot: client?.user?.tag || 'starting',
-        timestamp: new Date().toISOString()
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        fly_region: process.env.FLY_REGION || 'local'
     });
 });
 
@@ -98,7 +90,7 @@ app.get('/', (req, res) => {
 
 // ✅ SERVEUR EXPRESS POUR RAILWAY
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Middleware de base
 app.use(express.json());
