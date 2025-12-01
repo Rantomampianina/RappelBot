@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>🤖 RappelBot - GitHub Codespaces</title>
+            <title>🤖 RappelBot - Render</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body {
@@ -87,13 +87,12 @@ app.get('/', (req, res) => {
                         <li>Intégration Google Calendar</li>
                         <li>Commandes slash Discord</li>
                         <li>Base de données MongoDB</li>
-                        <li>Déployé sur GitHub Codespaces - 100% gratuit</li>
+                        <li>Déployé sur Render</li>
                     </ul>
                 </div>
                 <p><a href="/health">📊 Vérifier le statut complet</a></p>
                 <p><a href="/auth">🔗 Authentification Google</a></p>
                 <p><em>Le bot fonctionne en arrière-plan 24/7 sans interruption</em></p>
-                <p><small>Codespace: <code>${CODESPACE_NAME}</code></small></p>
             </div>
         </body>
         </html>
