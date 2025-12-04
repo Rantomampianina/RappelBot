@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware CORS pour React
 app.use(cors({
   origin: [
-    'http://localhost:5173',
+    // 'http://localhost:5173',
     'https://rappelbot-frontend.vercel.app',
     'https://rappelbot.vercel.app'
   ],
@@ -23,22 +23,54 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ API HEALTH POUR RENDER (obligatoire)
-app.get('/health', (req, res) => {
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    service: 'rappelbot-api',
-    uptime: process.uptime(),
-    discord: client?.readyAt ? 'connected' : 'connecting',
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
-    }
-  };
-  
-  res.set('Cache-Control', 'no-cache');
-  res.json(health);
+// ✅ API POUR REACT
+app.get('/api/bot/stats', async (req, res) => {
+  try {
+    const Rappel = require('./models/Rappel');
+    const Command = require('./models/Command'); // Si vous avez un modèle
+    
+    // Compter les rappels
+    const totalReminders = await Rappel.countDocuments();
+    const activeReminders = await Rappel.countDocuments({ completed: false });
+    
+    res.json({
+      status: 'online',
+      uptime: process.uptime(),
+      botUptime: client?.uptime || 0,
+      guilds: client?.guilds?.cache?.size || 0,
+      users: client?.users?.cache?.size || 0,
+      commands: client.commands?.size || 0,
+      reminders: {
+        total: totalReminders,
+        active: activeReminders
+      },
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ✅ ROUTE POUR LES SERVEURS
+app.get('/api/bot/guilds', async (req, res) => {
+  try {
+    const guilds = client?.guilds?.cache?.map(guild => ({
+      id: guild.id,
+      name: guild.name,
+      members: guild.memberCount,
+      icon: guild.iconURL({ size: 128 }),
+      joinedAt: guild.joinedAt
+    })) || [];
+    
+    res.json({ guilds });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ✅ API ROUTES POUR REACT
