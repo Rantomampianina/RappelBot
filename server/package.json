@@ -11,7 +11,7 @@
   },
   "keywords": [
     "discord",
-    "bot", 
+    "bot",
     "rappel",
     "ia",
     "multilingual",
@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "compromise": "^14.14.4",
+    "cors": "^2.8.5",
     "discord.js": "^14.23.2",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",

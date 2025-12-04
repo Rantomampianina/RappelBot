@@ -16,7 +16,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Home, Settings, Users, Bell, BarChart3, LogOut } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'https://rappelbot.onrender.com';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
