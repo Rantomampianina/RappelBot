@@ -16,7 +16,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Home, Settings, Users, Bell, BarChart3, LogOut } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
