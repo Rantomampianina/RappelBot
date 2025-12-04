@@ -11,15 +11,19 @@ const oauthRouter = require('./handlers/oauth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware CORS pour React
+// AJOUTEZ CE MIDDLEWARE CORS AU DÉBUT :
 app.use(cors({
   origin: [
-    // 'http://localhost:5173',
-    'https://rappelbot-frontend.vercel.app',
+    'https://rappel-bot.vercel.app',
     'https://rappelbot.vercel.app'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// AJOUTEZ CE MIDDLEWARE POUR LES OPTIONS REQUESTS :
+app.options('*', cors());
 
 app.use(express.json());
 
