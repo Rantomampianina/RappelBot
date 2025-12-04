@@ -4,237 +4,103 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const cors = require('cors');
 const oauthRouter = require('./handlers/oauth');
 
-// ✅ SERVEUR EXPRESS POUR RENDER
+// ✅ SERVEUR EXPRESS POUR L'API ET RENDER
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware CORS pour React
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://rappelbot-frontend.vercel.app',
+    'https://rappelbot.vercel.app'
+  ],
+  credentials: true
+}));
 
-app.get('/health', (req, res) => {
-    const health = {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        service: 'rappelbot',
-        uptime: process.uptime(),
-        discord: client?.readyAt ? 'connected' : 'connecting',
-        memory: {
-            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
-        }
-    };
-    
-    // Réponse rapide pour UptimeRobot
-    res.set('Cache-Control', 'no-cache');
-    res.json(health);
-});
-
-// Route racine optimisée
-app.get('/', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>🤖 RappelBot - Render</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 40px 20px;
-                    background: linear-gradient(135deg, #2ea44f 0%, #1a7f37 100%);
-                    color: white;
-                    min-height: 100vh;
-                }
-                .container {
-                    background: rgba(255,255,255,0.1);
-                    padding: 30px;
-                    border-radius: 15px;
-                    backdrop-filter: blur(10px);
-                    border: 1px solid rgba(255,255,255,0.2);
-                }
-                .status {
-                    background: rgba(255,255,255,0.2);
-                    padding: 20px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                }
-                .online { color: #00ff00; font-weight: bold; }
-                a {
-                    color: #ffd700;
-                    text-decoration: none;
-                    font-weight: 500;
-                }
-                a:hover { text-decoration: underline; }
-                code {
-                    background: rgba(0,0,0,0.3);
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    font-family: 'Monaco', 'Menlo', monospace;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🤖 RappelBot</h1>
-                <div class="status">
-                    <p class="online">✅ Bot Discord en ligne sur Render</p>
-                    <p><strong>Statut :</strong> 24/7 actif - Hébergement GitHub 🚀</p>
-                    <p><strong>Fonctionnalités :</strong></p>
-                    <ul>
-                        <li>Rappels intelligents avec IA</li>
-                        <li>Intégration Google Calendar</li>
-                        <li>Commandes slash Discord</li>
-                        <li>Base de données MongoDB</li>
-                        <li>Déployé sur Render</li>
-                    </ul>
-                </div>
-                <p><a href="/health">📊 Vérifier le statut complet</a></p>
-                <p><a href="/auth">🔗 Authentification Google</a></p>
-                <p><em>Le bot fonctionne en arrière-plan 24/7 sans interruption</em></p>
-            </div>
-        </body>
-        </html>
-    `);
-});
-
-
-// Middleware de base
 app.use(express.json());
-app.use(express.static('public'));
 
-// ✅ ROUTES STATIQUES EN PREMIER
-app.get('/', (req, res) => {
-    console.log('📍 Route / appelée');
-    res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>🤖 RappelBot - Railway</title>
-            <style>
-                body { 
-                    font-family: Arial, sans-serif; 
-                    max-width: 800px; 
-                    margin: 0 auto; 
-                    padding: 40px 20px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    min-height: 100vh;
-                }
-                .container {
-                    background: rgba(255,255,255,0.1);
-                    padding: 30px;
-                    border-radius: 15px;
-                    backdrop-filter: blur(10px);
-                }
-                .status { 
-                    background: rgba(255,255,255,0.2); 
-                    padding: 20px; 
-                    border-radius: 10px; 
-                    margin: 20px 0; 
-                }
-                .online { color: #00ff00; font-weight: bold; }
-                a { color: #ffd700; text-decoration: none; }
-                a:hover { text-decoration: underline; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🤖 RappelBot</h1>
-                <div class="status">
-                    <p class="online">✅ Bot Discord en ligne sur Railway</p>
-                    <p><strong>URL :</strong> https://4tuxn0jj.up.railway.app</p>
-                    <p><strong>Fonctionnalités :</strong></p>
-                    <ul>
-                        <li>Rappels intelligents avec IA</li>
-                        <li>Intégration Google Calendar</li>
-                        <li>Commandes slash Discord</li>
-                        <li>Déployé sur Railway 🚀</li>
-                    </ul>
-                </div>
-                <p><a href="/health">📊 Vérifier le statut complet</a></p>
-                <p><a href="/auth">🔗 Authentification Google</a></p>
-                <p><em>Le bot fonctionne en arrière-plan 24/7</em></p>
-            </div>
-        </body>
-        </html>
-    `);
-});
-
+// ✅ API HEALTH POUR RENDER (obligatoire)
 app.get('/health', (req, res) => {
-    res.json({
-        status: 'online',
-        platform: 'Railway', 
-        bot: 'RappelBot',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        guilds: client?.guilds?.cache?.size || 0
-    });
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'rappelbot-api',
+    uptime: process.uptime(),
+    discord: client?.readyAt ? 'connected' : 'connecting',
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+    }
+  };
+  
+  res.set('Cache-Control', 'no-cache');
+  res.json(health);
 });
 
-// ✅ ROUTES DE DÉBOGAGE
-app.get('/debug/routes', (req, res) => {
-    const routes = [];
-    app._router.stack.forEach(middleware => {
-        if(middleware.route) {
-            routes.push({
-                path: middleware.route.path,
-                methods: Object.keys(middleware.route.methods)
-            });
-        } else if(middleware.name === 'router') {
-            // Routes du routeur OAuth
-            middleware.handle.stack.forEach(handler => {
-                if(handler.route) {
-                    routes.push({
-                        path: handler.route.path,
-                        methods: Object.keys(handler.route.methods),
-                        source: 'oauthRouter'
-                    });
-                }
-            });
-        }
-    });
-    res.json({ routes, total: routes.length });
+// ✅ API ROUTES POUR REACT
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'online',
+    bot: 'RappelBot',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    guilds: client?.guilds?.cache?.size || 0,
+    commands: client.commands?.size || 0
+  });
 });
 
-// ✅ ROUTER OAUTH APRÈS LES ROUTES STATIQUES
-app.use('/', oauthRouter);
+// ✅ ROUTES DE RAPPELS POUR REACT
+app.get('/api/reminders/:userId', async (req, res) => {
+  try {
+    const Rappel = require('./models/Rappel');
+    const reminders = await Rappel.find({ discordId: req.params.userId, completed: false });
+    res.json(reminders);
+  } catch (error) {
+    console.error('Error fetching reminders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
-// ✅ ROUTE 404 DOIT ÊTRE LA DERNIÈRE
-app.use('*', (req, res) => {
-    res.status(404).send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Page non trouvée - RappelBot</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                h1 { color: #ff4444; }
-            </style>
-        </head>
-        <body>
-            <h1>❌ Page non trouvée</h1>
-            <p>La page que vous recherchez n'existe pas.</p>
-            <p><a href="/">Retour à l'accueil</a></p>
-        </body>
-        </html>
-    `);
+// ✅ ROUTER OAUTH
+app.use('/auth', oauthRouter);
+
+// ✅ ROUTE RACINE SIMPLE
+app.get('/', (req, res) => {
+  res.json({
+    message: 'RappelBot API',
+    endpoints: {
+      health: '/health',
+      status: '/api/status',
+      reminders: '/api/reminders/:userId',
+      auth: '/auth/google'
+    },
+    frontend: 'https://rappelbot.vercel.app'
+  });
 });
 
 // Démarrer le serveur web
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Serveur Express démarré sur le port ${PORT}`);
+  console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
 });
 
-// ✅ CLIENT DISCORD
+// ✅ CLIENT DISCORD (inchangé)
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds, 
-        GatewayIntentBits.GuildMessages, 
-        GatewayIntentBits.MessageContent
-    ]
+  intents: [
+    GatewayIntentBits.Guilds, 
+    GatewayIntentBits.GuildMessages, 
+    GatewayIntentBits.MessageContent
+  ]
 });
+
+client.commands = new Collection();
+
+// ... [Tout le reste du code du bot reste identique]
+// Gardez tout le code du bot Discord à partir de "client.commands = new Collection();"
+// Jusqu'à la fin du fichier
 
 client.commands = new Collection();
 
