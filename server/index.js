@@ -31,7 +31,7 @@ app.use(express.json());
 app.get('/api/bot/stats', async (req, res) => {
   try {
     const Rappel = require('./models/Rappel');
-    const Command = require('./models/Command'); // Si vous avez un modèle
+    // const Command = require('./models/Command'); // Si vous avez un modèle
     
     // Compter les rappels
     const totalReminders = await Rappel.countDocuments();
