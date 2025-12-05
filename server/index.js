@@ -6,6 +6,8 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const oauthRouter = require('./handlers/oauth');
+const axios = require('axios');
+const https = require('https');
 
 // ✅ SERVEUR EXPRESS POUR L'API ET RENDER
 const app = express();
@@ -24,14 +26,12 @@ app.use(cors({
 
 // AJOUTEZ CE MIDDLEWARE POUR LES OPTIONS REQUESTS :
 app.options('*', cors());
-
 app.use(express.json());
 
 // ✅ API POUR REACT
 app.get('/api/bot/stats', async (req, res) => {
   try {
     const Rappel = require('./models/Rappel');
-    // const Command = require('./models/Command'); // Si vous avez un modèle
     
     // Compter les rappels
     const totalReminders = await Rappel.countDocuments();
@@ -104,6 +104,27 @@ app.get('/api/reminders/:userId', async (req, res) => {
 // ✅ ROUTER OAUTH
 app.use('/auth', oauthRouter);
 
+// ✅ ROUTE HEALTH OBLIGATOIRE (Render la vérifie)
+app.get('/health', (req, res) => {
+    const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'rappelbot',
+        uptime: process.uptime(),
+        discord: client?.readyAt ? 'connected' : 'connecting',
+        guilds: client?.guilds?.cache?.size || 0,
+        memory: {
+            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+        }
+    };
+    
+    // Réponse RAPIDE pour UptimeRobot et auto-ping
+    res.set('Cache-Control', 'no-cache');
+    res.set('Connection', 'keep-alive');
+    res.json(health);
+});
+
 // ✅ ROUTE RACINE SIMPLE
 app.get('/', (req, res) => {
   res.json({
@@ -120,10 +141,15 @@ app.get('/', (req, res) => {
 
 // Démarrer le serveur web
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Serveur API démarré sur le port ${PORT}`);
+    console.log(`🚀 Serveur Express démarré sur le port ${PORT}`);
+    
+    // ✅ APPELER ANTI-SLEEP APRÈS QUE LE SERVEUR SOIT PRÊT
+    setTimeout(() => {
+        setupAntiSleep();
+    }, 2000);
 });
 
-// ✅ CLIENT DISCORD (inchangé)
+// ✅ CLIENT DISCORD
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds, 
@@ -134,42 +160,87 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// ... [Tout le reste du code du bot reste identique]
-// Gardez tout le code du bot Discord à partir de "client.commands = new Collection();"
-// Jusqu'à la fin du fichier
-
 client.commands = new Collection();
 
-// FONCTION ANTI-SLEEP SYSTEM
+// FONCTION ANTI-SLEEP SYSTEM CORRIGÉE
 function setupAntiSleep() {
-    const RENDER_URL = `https://${process.env.RENDER_SERVICE_NAME || 'rappelbot'}.onrender.com`;
+    const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `https://${process.env.RENDER_SERVICE_NAME || 'rappelbot'}.onrender.com`;
     
-    // 1. Ping interne (actif quand le bot tourne)
+    // Créer un agent HTTPS qui ignore les erreurs de certificat (pour éviter les timeout)
+    const httpsAgent = new https.Agent({
+        rejectUnauthorized: false,
+        keepAlive: true,
+        timeout: 10000 // 10 secondes max
+    });
+    
+    // 1. Ping externe (très important pour Render)
     setInterval(async () => {
         try {
-            const response = await fetch(`${RENDER_URL}/health`);
-            if (response.ok) {
-                console.log('✅ Auto-ping réussi');
+            const pingStart = Date.now();
+            const response = await axios.get(`${RENDER_URL}/health`, {
+                httpsAgent,
+                timeout: 15000,
+                headers: {
+                    'User-Agent': 'RappelBot-AntiSleep/1.0'
+                }
+            });
+            
+            const pingTime = Date.now() - pingStart;
+            
+            if (response.status === 200) {
+                console.log(`✅ Auto-ping réussi (${pingTime}ms) :`, response.data?.status || 'OK');
+            } else {
+                console.log(`⚠️ Ping HTTP ${response.status}`);
             }
+            
         } catch (error) {
-            console.log('⚠️ Auto-ping échoué (normal si bot vient de démarrer)');
+            console.log('🔴 Auto-ping échoué:', error.message);
+            
+            // Tentative de fallback avec la racine
+            try {
+                await axios.get(`${RENDER_URL}/`, {
+                    httpsAgent,
+                    timeout: 10000
+                });
+                console.log('✅ Fallback ping réussi via /');
+            } catch (fallbackError) {
+                console.log('🔴 Fallback ping aussi échoué');
+            }
+            
         }
-    }, 4.5 * 60 * 1000); // 4.5 minutes (plus rapide que UptimeRobot)
+    }, 4.5 * 60 * 1000); // 4.5 minutes (CRITIQUE pour Render)
     
-    // 2. Logs de monitoring
+    // 2. Ping immédiat au démarrage
+    setTimeout(() => {
+        console.log('🚀 Premier ping anti-sleep...');
+        // Appel asynchrone sans attendre
+        axios.get(`${RENDER_URL}/health`, {
+            httpsAgent,
+            timeout: 10000
+        }).then(res => {
+            console.log('✅ Premier ping OK');
+        }).catch(err => {
+            console.log('⚠️ Premier ping échoué:', err.message);
+        });
+    }, 10000); // 10 secondes après démarrage
+    
+    // 3. Logs de monitoring améliorés
     setInterval(() => {
-        if (client && client.uptime) {
-            const uptimeMinutes = Math.floor(client.uptime / 60000);
-            const memoryUsage = process.memoryUsage();
-            console.log(`📊 Stats: ${uptimeMinutes}min actif | RAM: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`);
-        }
-    }, 10 * 60 * 1000); // Toutes les 10 minutes
+        const memoryUsage = process.memoryUsage();
+        const uptimeMinutes = client?.uptime ? Math.floor(client.uptime / 60000) : 0;
+        const processUptimeMinutes = Math.floor(process.uptime() / 60);
+        
+        console.log(`📊 Monitoring:`);
+        console.log(`   Process uptime: ${processUptimeMinutes}min`);
+        console.log(`   Bot uptime: ${uptimeMinutes}min`);
+        console.log(`   RAM: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`);
+        console.log(`   RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB`);
+        console.log(`   Guilds: ${client?.guilds?.cache?.size || 0}`);
+        console.log(`   Ping actif: ${RENDER_URL}`);
+    }, 5 * 60 * 1000); // Toutes les 5 minutes
     
-    console.log('🛡️ Système anti-sleep activé');
+    console.log(`🛡️ Système anti-sleep activé pour ${RENDER_URL}`);
 }
-
-// Appeler au démarrage
-setupAntiSleep();
 
 // ✅ REFACTORISATION DE LA GESTION DES INTERACTIONS
 async function handleButtonInteraction(interaction) {
@@ -441,6 +512,12 @@ async function startBot() {
         process.exit(1);
     }
 }
+
+// Démarrer le bot APRÈS que le serveur soit prêt
+server.on('listening', () => {
+    console.log('✅ Serveur HTTP prêt, démarrage du bot...');
+    startBot();
+});
 
 // Démarrer le bot
 startBot();
