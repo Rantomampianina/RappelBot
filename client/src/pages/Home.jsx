@@ -56,7 +56,7 @@ const Home = () => {
     {
       icon: <Code className="w-8 h-8" />,
       title: "API Complète",
-      description: "Documentation développeur complète",
+      description: "Documentation développeur",
       color: "from-indigo-500 to-purple-500"
     },
     {
