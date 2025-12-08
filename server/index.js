@@ -60,6 +60,22 @@ app.get('/api/bot/stats', async (req, res) => {
   }
 });
 
+// Dans le backend (server/index.js)
+app.get('/api/ping', (req, res) => {
+  const startTime = req.query.start ? parseInt(req.query.start) : Date.now();
+  const serverTime = Date.now();
+  const roundTripTime = serverTime - startTime;
+  
+  res.json({
+    pong: true,
+    serverTime,
+    clientTime: startTime,
+    roundTripTime,
+    latency: roundTripTime / 2, // Estimation latence réseau (aller simple)
+    uptime: process.uptime()
+  });
+});
+
 // ✅ ROUTE POUR LES SERVEURS
 app.get('/api/bot/guilds', async (req, res) => {
   try {
@@ -236,7 +252,7 @@ function setupAntiSleep() {
         console.log(`   RAM: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`);
         console.log(`   RSS: ${Math.round(memoryUsage.rss / 1024 / 1024)}MB`);
         console.log(`   Guilds: ${client?.guilds?.cache?.size || 0}`);
-        console.log(`   Ping actif: ${RENDER_URL}`);
+        // console.log(`   Ping actif: ${RENDER_URL}`);
     }, 5 * 60 * 1000); // Toutes les 5 minutes
     
     console.log(`🛡️ Système anti-sleep activé pour ${RENDER_URL}`);
