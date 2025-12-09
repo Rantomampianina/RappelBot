@@ -5,6 +5,13 @@ const Config = require('../models/Config');
 // Correction de l'import
 const { planifierRappel } = require('../handlers/alarm');
 
+// Fonction pour détecter le fuseau horaire de l'utilisateur
+function detectUserTimezone(interaction) {
+    // Pour l'instant, on utilise Europe/Paris par défaut
+    // Plus tard: stocker le fuseau dans la base de données utilisateur
+    return 'Europe/Paris';
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('rappel')
@@ -69,16 +76,17 @@ module.exports = {
             }
 
             // Création du rappel normal
-                const rappel = new Rappel({ 
-                    user: userId, 
-                    text: texte, 
-                    date, 
-                    time, 
-                    duration,
-                    channelId: interaction.channelId,
-                    completed: false,
-                    timezone: 'Europe/Paris' // Ajout du fuseau
-                });
+            const userTimezone = detectUserTimezone(interaction);
+            const rappel = new Rappel({ 
+                user: userId, 
+                text: texte, 
+                date, 
+                time, 
+                duration,
+                channelId: interaction.channelId,
+                completed: false,
+                timezone: userTimezone // Ajout du fuseau détecté
+            });
 
             await rappel.save();
             

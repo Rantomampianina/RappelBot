@@ -1,34 +1,113 @@
 const Rappel = require('../models/Rappel');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const moment = require('moment-timezone');
 
 let client;
 
 // Stocker les alarmes planifiées
 const plannedAlarms = new Map();
 
-// Fuseau horaire par défaut (Europe/Paris)
-const DEFAULT_TIMEZONE = 'Europe/Paris';
+// Fonction pour obtenir l'heure actuelle dans un fuseau donné
+function getNowInTimezone(timezone = 'Europe/Paris') {
+    return new Date().toLocaleString('fr-FR', { timeZone: timezone });
+}
 
-function calculateAlarmTime(dateStr, timeStr, timezone = DEFAULT_TIMEZONE) {
+// Fonction pour calculer le timestamp d'une date/heure dans un fuseau
+function calculateAlarmTimestamp(dateStr, timeStr, timezone = 'Europe/Paris') {
     try {
         // Créer une date dans le fuseau de l'utilisateur
-        const dateTimeStr = `${dateStr} ${timeStr}`;
-        const m = moment.tz(dateTimeStr, 'DD/MM/YYYY HH:mm', timezone);
+        const [day, month, year] = dateStr.split('/').map(Number);
+        const [hours, minutes] = timeStr.split(':').map(Number);
         
-        if (!m.isValid()) {
-            console.error(`Date/heure invalide: ${dateStr} ${timeStr} (timezone: ${timezone})`);
-            return null;
+        // Créer une string ISO dans le fuseau
+        const dateString = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+        
+        // Convertir en Date avec le fuseau
+        const dateWithTimezone = new Date(dateString + 'Z'); // 'Z' indique UTC, mais on va l'ajuster
+        
+        // Obtenir le décalage entre UTC et le fuseau demandé (en minutes)
+        const timezoneOffset = getTimezoneOffset(timezone, dateWithTimezone);
+        
+        // Ajuster pour le fuseau
+        const utcTimestamp = dateWithTimezone.getTime() - (timezoneOffset * 60000);
+        
+        console.log(`🕐 Calcul alarme: ${dateStr} ${timeStr} ${timezone}`);
+        console.log(`   -> Date locale: ${dateString}`);
+        console.log(`   -> Décalage fuseau: ${timezoneOffset} minutes`);
+        console.log(`   -> Timestamp UTC: ${utcTimestamp} (${new Date(utcTimestamp).toISOString()})`);
+        
+        return utcTimestamp;
+    } catch (error) {
+        console.error('❌ Erreur calculateAlarmTimestamp:', error);
+        return null;
+    }
+}
+
+// Obtenir le décalage d'un fuseau horaire (en minutes)
+function getTimezoneOffset(timezone, date = new Date()) {
+    try {
+        const formatter = new Intl.DateTimeFormat('fr-FR', {
+            timeZone: timezone,
+            timeZoneName: 'longOffset'
+        });
+        
+        const parts = formatter.formatToParts(date);
+        const offsetPart = parts.find(part => part.type === 'timeZoneName');
+        
+        if (offsetPart && offsetPart.value) {
+            const match = offsetPart.value.match(/UTC([+-]\d{1,2})(?::(\d{2}))?/);
+            if (match) {
+                const hours = parseInt(match[1]);
+                const minutes = match[2] ? parseInt(match[2]) : 0;
+                return (hours * 60) + (hours < 0 ? -minutes : minutes);
+            }
         }
         
-        // Convertir en UTC pour le stockage
-        const utcDate = m.utc().toDate();
-        console.log(`🕐 Calcul alarme: ${dateStr} ${timeStr} ${timezone} -> UTC: ${utcDate.toISOString()}`);
+        // Fallback pour Europe/Paris
+        const now = new Date();
+        const jan = new Date(now.getFullYear(), 0, 1);
+        const jul = new Date(now.getFullYear(), 6, 1);
         
-        return utcDate;
+        // Heure d'été (mars à octobre) : UTC+2, sinon UTC+1
+        const isSummerTime = now.getTimezoneOffset() < Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+        return isSummerTime ? -120 : -60; // En minutes (négatif car Europe est en avance sur UTC)
+        
     } catch (error) {
-        console.error('Erreur calculateAlarmTime:', error);
-        return null;
+        console.error('❌ Erreur getTimezoneOffset:', error);
+        return -60; // Fallback: UTC+1
+    }
+}
+
+// Obtenir l'heure actuelle dans un fuseau
+function getCurrentTimeInTimezone(timezone = 'Europe/Paris') {
+    try {
+        const now = new Date();
+        return now.toLocaleTimeString('fr-FR', { 
+            timeZone: timezone,
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        console.error('❌ Erreur getCurrentTimeInTimezone:', error);
+        const now = new Date();
+        return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
+}
+
+// Obtenir la date actuelle dans un fuseau
+function getCurrentDateInTimezone(timezone = 'Europe/Paris') {
+    try {
+        const now = new Date();
+        return now.toLocaleDateString('fr-FR', { 
+            timeZone: timezone,
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }).replace(/\//g, '/');
+    } catch (error) {
+        console.error('❌ Erreur getCurrentDateInTimezone:', error);
+        const now = new Date();
+        return `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
     }
 }
 
@@ -40,34 +119,27 @@ async function triggerAlarm(rappel) {
         }
 
         const freshRappel = await Rappel.findById(rappel._id);
-        if (!freshRappel) {
-            console.log(`❌ Rappel ${rappel._id} supprimé, annulation`);
-            return;
-        }
-        
-        if (freshRappel.completed) {
-            console.log(`✅ Rappel ${rappel._id} déjà complété, annulation`);
+        if (!freshRappel || freshRappel.completed) {
+            console.log(`✅ Rappel ${rappel._id} déjà traité, annulation`);
             return;
         }
 
         const channel = await client.channels.fetch(rappel.channelId).catch(() => null);
-        if (!channel) {
-            console.log(`❌ Channel non trouvé: ${rappel.channelId}`);
+        const user = await client.users.fetch(rappel.user).catch(() => null);
+        
+        if (!channel && !user) {
+            console.log(`❌ Canal et utilisateur non trouvés pour rappel ${rappel._id}`);
             return;
         }
 
-        // Convertir l'heure UTC stockée en heure locale pour l'affichage
-        const alarmTimeUTC = calculateAlarmTime(rappel.date, rappel.time, DEFAULT_TIMEZONE);
-        const localTime = moment(alarmTimeUTC).tz(DEFAULT_TIMEZONE).format('HH:mm');
-        
-        console.log(`🔔 Déclenchement alarme: ${rappel.text} (${rappel.date} ${localTime})`);
+        console.log(`🔔 Déclenchement alarme: "${rappel.text}" pour ${rappel.user}`);
 
         const embed = new EmbedBuilder()
             .setTitle('🔔 RAPPEL')
             .setDescription(`**${rappel.text}**`)
             .addFields(
-                { name: '⏰ Heure prévue', value: `${rappel.date} à ${localTime}`, inline: true },
-                { name: '📍 Canal', value: `<#${rappel.channelId}>`, inline: true }
+                { name: '⏰ Heure prévue', value: `${rappel.date} à ${rappel.time}`, inline: true },
+                { name: '📍 Canal', value: rappel.channelId ? `<#${rappel.channelId}>` : 'DM', inline: true }
             )
             .setColor(0xFFA500)
             .setTimestamp();
@@ -83,23 +155,27 @@ async function triggerAlarm(rappel) {
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        // Essayer d'envoyer une notification dans le canal ET en DM
-        try {
-            await channel.send({ 
-                content: `<@${rappel.user}> 📢 **RAPPEL**`, 
-                embeds: [embed], 
-                components: [row] 
-            });
-            console.log(`✅ Notification envoyée dans le canal ${channel.name}`);
-        } catch (channelError) {
-            console.error(`❌ Erreur envoi canal: ${channelError.message}`);
-            
-            // Fallback: envoyer en DM
+        // Essayer d'envoyer dans le canal
+        if (channel) {
             try {
-                const user = await client.users.fetch(rappel.user);
+                await channel.send({ 
+                    content: `<@${rappel.user}> 📢 **RAPPEL**`, 
+                    embeds: [embed], 
+                    components: [row] 
+                });
+                console.log(`✅ Notification envoyée dans le canal ${channel.name}`);
+            } catch (channelError) {
+                console.error(`❌ Erreur envoi canal: ${channelError.message}`);
+            }
+        }
+
+        // Toujours essayer d'envoyer en DM
+        if (user) {
+            try {
                 await user.send({ 
-                    content: `📢 **RAPPEL** (impossible d'envoyer dans <#${rappel.channelId}>)`, 
-                    embeds: [embed] 
+                    content: `📢 **RAPPEL**`, 
+                    embeds: [embed],
+                    components: channel ? [] : [row] // Pas de boutons si déjà envoyés dans le canal
                 });
                 console.log(`✅ Notification envoyée en DM à ${user.tag}`);
             } catch (dmError) {
@@ -108,13 +184,21 @@ async function triggerAlarm(rappel) {
         }
 
         // Gérer les répétitions
+        const timezone = rappel.timezone || 'Europe/Paris';
+        
         if (rappel.repeat === 'aucun') {
             await Rappel.findByIdAndDelete(rappel._id);
             console.log(`🗑️ Rappel unique supprimé: ${rappel.text}`);
         } else if (rappel.repeat === 'quotidien') {
-            // Replanifier pour le lendemain
-            const tomorrow = moment().tz(DEFAULT_TIMEZONE).add(1, 'days');
-            const newDate = tomorrow.format('DD/MM/YYYY');
+            // Calculer la date de demain dans le fuseau de l'utilisateur
+            const now = new Date();
+            const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            const newDate = tomorrow.toLocaleDateString('fr-FR', { 
+                timeZone: timezone,
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }).replace(/\//g, '/');
             
             await Rappel.findByIdAndUpdate(rappel._id, {
                 date: newDate,
@@ -127,9 +211,15 @@ async function triggerAlarm(rappel) {
             console.log(`🔄 Rappel quotidien replanifié pour: ${newDate}`);
             
         } else if (rappel.repeat === 'hebdomadaire') {
-            // Replanifier pour la semaine prochaine
-            const nextWeek = moment().tz(DEFAULT_TIMEZONE).add(7, 'days');
-            const newDate = nextWeek.format('DD/MM/YYYY');
+            // Calculer la date de la semaine prochaine
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const newDate = nextWeek.toLocaleDateString('fr-FR', { 
+                timeZone: timezone,
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }).replace(/\//g, '/');
             
             await Rappel.findByIdAndUpdate(rappel._id, {
                 date: newDate,
@@ -157,31 +247,34 @@ async function triggerAlarm(rappel) {
 
 function planifierRappel(rappel) {
     try {
-        const alarmTimeUTC = calculateAlarmTime(rappel.date, rappel.time, DEFAULT_TIMEZONE);
+        const timezone = rappel.timezone || 'Europe/Paris';
+        const alarmTimestamp = calculateAlarmTimestamp(rappel.date, rappel.time, timezone);
         
-        if (!alarmTimeUTC) {
-            console.error(`❌ Impossible de calculer l'heure pour: ${rappel.date} ${rappel.time}`);
+        if (!alarmTimestamp) {
+            console.error(`❌ Impossible de calculer l'heure pour: ${rappel.date} ${rappel.time} (fuseau: ${timezone})`);
             return null;
         }
 
-        const nowUTC = new Date();
-        const delay = alarmTimeUTC.getTime() - nowUTC.getTime();
+        const nowUTC = Date.now();
+        const delay = alarmTimestamp - nowUTC;
+
+        console.log(`[DEBUG] Heure actuelle UTC: ${new Date(nowUTC).toISOString()}`);
+        console.log(`[DEBUG] Heure alarme UTC: ${new Date(alarmTimestamp).toISOString()}`);
+        console.log(`[DEBUG] Délai calculé: ${delay}ms (${Math.round(delay/1000)} secondes)`);
 
         if (delay <= 0) {
-            console.log(`⚠️ Rappel "${rappel.text}" est déjà passé (${rappel.date} ${rappel.time})`);
+            console.log(`⚠️ Rappel "${rappel.text}" est déjà passé (${rappel.date} ${rappel.time} ${timezone})`);
             
-            // Si c'est un rappel récurrent, le replanifier pour la prochaine occurrence
-            if (rappel.repeat && rappel.repeat !== 'aucun') {
-                console.log(`🔄 Tentative de replanification pour le prochain cycle...`);
-                // Cette logique sera gérée par triggerAlarm
-                return null;
-            }
-            
-            // Sinon, marquer comme complété
-            if (!rappel.completed) {
-                Rappel.findByIdAndUpdate(rappel._id, { completed: true })
-                    .then(() => console.log(`✅ Rappel passé marqué comme complété: ${rappel.text}`))
-                    .catch(err => console.error('❌ Erreur marquage rappel:', err));
+            // Vérifier si passé depuis moins de 5 minutes
+            if (delay > -300000) { // -5 minutes en ms
+                console.log(`🔄 Déclenchement immédiat (dépassé de ${Math.round(-delay/1000)}s)`);
+                setTimeout(() => triggerAlarm(rappel), 100);
+            } else {
+                console.log(`⏰ Trop tard (dépassé de ${Math.round(-delay/60000)} minutes), marquage comme complété`);
+                if (!rappel.completed) {
+                    Rappel.findByIdAndUpdate(rappel._id, { completed: true })
+                        .catch(err => console.error('❌ Erreur marquage rappel:', err));
+                }
             }
             return null;
         }
@@ -205,7 +298,7 @@ function planifierRappel(rappel) {
         const heures = Math.floor(minutes / 60);
         const minsRestantes = minutes % 60;
         
-        console.log(`✅ Alarme planifiée: "${rappel.text}" pour ${rappel.date} ${rappel.time} (dans ${heures}h${minsRestantes}m)`);
+        console.log(`✅ Alarme planifiée: "${rappel.text}" pour ${rappel.date} ${rappel.time} ${timezone} (dans ${heures}h${minsRestantes}m)`);
         
         return timeoutId;
     } catch (error) {
@@ -222,59 +315,39 @@ function setupAlarmChecker(discordClient) {
     // Vérifier les alarmes manquées toutes les minutes
     setInterval(async () => {
         try {
-            const now = moment().tz(DEFAULT_TIMEZONE);
-            const nowDate = now.format('DD/MM/YYYY');
-            const nowTime = now.format('HH:mm');
+            const rappels = await Rappel.find({ completed: false });
             
-            // Chercher les rappels non complétés dont la date/heure est passée
-            // (jusqu'à 7 jours en arrière pour rattraper)
-            const sevenDaysAgo = now.clone().subtract(7, 'days').format('DD/MM/YYYY');
+            if (rappels.length === 0) return;
             
-            const missedAlarms = await Rappel.find({ 
-                completed: false,
-                $or: [
-                    { 
-                        date: { $lt: nowDate },
-                        time: { $exists: true }
-                    },
-                    { 
-                        date: nowDate,
-                        time: { $lte: nowTime }
-                    }
-                ],
-                date: { $gte: sevenDaysAgo } // Limiter à 7 jours en arrière
-            });
-
-            if (missedAlarms.length > 0) {
-                console.log(`🔍 ${missedAlarms.length} alarme(s) manquée(s) détectée(s)`);
-            }
-
-            for (const rappel of missedAlarms) {
-                const alarmTime = calculateAlarmTime(rappel.date, rappel.time, DEFAULT_TIMEZONE);
-                if (!alarmTime) continue;
+            console.log(`🔍 Vérification de ${rappels.length} rappels non complétés...`);
+            
+            for (const rappel of rappels) {
+                const timezone = rappel.timezone || 'Europe/Paris';
+                const alarmTimestamp = calculateAlarmTimestamp(rappel.date, rappel.time, timezone);
                 
-                const diffMinutes = (now.valueOf() - alarmTime.getTime()) / (1000 * 60);
+                if (!alarmTimestamp) continue;
                 
-                // Rattraper les alarmes manquées de moins de 60 minutes
-                if (diffMinutes <= 60 && diffMinutes > 0) {
+                const nowUTC = Date.now();
+                const diffMinutes = (nowUTC - alarmTimestamp) / (1000 * 60);
+                
+                // Si l'alarme est passée de moins de 60 minutes et pas déjà planifiée
+                if (diffMinutes > 0 && diffMinutes <= 60 && !plannedAlarms.has(rappel._id.toString())) {
                     console.log(`🔄 Rattrapage alarme manquée (${diffMinutes.toFixed(1)} min): ${rappel.text}`);
-                    
-                    // Vérifier si une alarme est déjà planifiée pour ce rappel
-                    if (!plannedAlarms.has(rappel._id.toString())) {
-                        await triggerAlarm(rappel);
-                    }
-                } else if (diffMinutes > 60) {
-                    // Si trop ancien, marquer comme complété
-                    console.log(`⏳ Alarme trop ancienne (${diffMinutes.toFixed(1)} min), marquage comme complété: ${rappel.text}`);
+                    await triggerAlarm(rappel);
+                }
+                
+                // Si trop ancien (plus de 24h), marquer comme complété
+                if (diffMinutes > 1440) { // 24h
+                    console.log(`⏳ Alarme trop ancienne (${Math.round(diffMinutes/60)}h), marquage comme complété: ${rappel.text}`);
                     await Rappel.findByIdAndUpdate(rappel._id, { completed: true });
                 }
             }
         } catch (error) {
             console.error('❌ Erreur alarm checker:', error);
         }
-    }, 60000); // Toutes les minutes
+    }, 30000); // Toutes les 30 secondes
     
-    console.log('✅ Vérificateur d\'alarmes activé');
+    console.log('✅ Vérificateur d\'alarmes activé (vérification toutes les 30s)');
 }
 
 // Fonction pour replanifier toutes les alarmes au redémarrage
@@ -305,10 +378,21 @@ async function replanifierToutesAlarmes() {
     }
 }
 
+// Fonction de debug pour vérifier les fuseaux
+function debugTimezone() {
+    console.log('🌍 Debug fuseaux horaires:');
+    console.log(`   Heure serveur (UTC): ${new Date().toISOString()}`);
+    console.log(`   Heure Europe/Paris: ${getCurrentDateInTimezone('Europe/Paris')} ${getCurrentTimeInTimezone('Europe/Paris')}`);
+    console.log(`   Décalage Europe/Paris: ${getTimezoneOffset('Europe/Paris')} minutes`);
+}
+
 module.exports = {
     planifierRappel,
     triggerAlarm,
     setupAlarmChecker,
     replanifierToutesAlarmes,
-    plannedAlarms // Pour debug
+    plannedAlarms,
+    debugTimezone,
+    getCurrentTimeInTimezone,
+    getCurrentDateInTimezone
 };

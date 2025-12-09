@@ -155,6 +155,45 @@ app.get('/', (req, res) => {
   });
 });
 
+// Ajoutez cette route API :
+app.get('/api/debug/time', (req, res) => {
+    const { getCurrentTimeInTimezone, getCurrentDateInTimezone } = require('./handlers/alarm');
+    
+    res.json({
+        server: {
+            iso: new Date().toISOString(),
+            local: new Date().toString(),
+            timestamp: Date.now(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        europeParis: {
+            date: getCurrentDateInTimezone('Europe/Paris'),
+            time: getCurrentTimeInTimezone('Europe/Paris'),
+            offset: getTimezoneOffset('Europe/Paris')
+        },
+        utc: {
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toISOString().split('T')[1].split('.')[0]
+        }
+    });
+});
+
+// Fonction helper (ajoutez-la dans index.js ou importez-la)
+function getTimezoneOffset(timezone) {
+    try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('fr-FR', {
+            timeZone: timezone,
+            timeZoneName: 'longOffset'
+        });
+        const parts = formatter.formatToParts(now);
+        const offsetPart = parts.find(part => part.type === 'timeZoneName');
+        return offsetPart ? offsetPart.value : 'Unknown';
+    } catch (error) {
+        return 'Error: ' + error.message;
+    }
+}
+
 // Démarrer le serveur web
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Serveur Express démarré sur le port ${PORT}`);
