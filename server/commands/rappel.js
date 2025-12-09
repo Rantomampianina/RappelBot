@@ -69,15 +69,16 @@ module.exports = {
             }
 
             // Création du rappel normal
-            const rappel = new Rappel({ 
-                user: userId, 
-                text: texte, 
-                date, 
-                time, 
-                duration,
-                channelId: interaction.channelId,
-                completed: false
-            });
+                const rappel = new Rappel({ 
+                    user: userId, 
+                    text: texte, 
+                    date, 
+                    time, 
+                    duration,
+                    channelId: interaction.channelId,
+                    completed: false,
+                    timezone: 'Europe/Paris' // Ajout du fuseau
+                });
 
             await rappel.save();
             

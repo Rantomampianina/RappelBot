@@ -109,7 +109,7 @@ app.get('/api/status', (req, res) => {
 app.get('/api/reminders/:userId', async (req, res) => {
   try {
     const Rappel = require('./models/Rappel');
-    const reminders = await Rappel.find({ discordId: req.params.userId, completed: false });
+    const reminders = await Rappel.find({ user: req.params.userId, completed: false }); // user au lieu de discordId
     res.json(reminders);
   } catch (error) {
     console.error('Error fetching reminders:', error);
@@ -425,7 +425,7 @@ async function initializeAlarms() {
         console.log('🔔 Initialisation des alarmes...');
         
         const Rappel = require('./models/Rappel');
-        const { setupAlarmChecker, planifierRappel } = require('./handlers/alarm');
+        const { setupAlarmChecker, replanifierToutesAlarmes } = require('./handlers/alarm');
         
         if (mongoose.connection.readyState !== 1) {
             console.log('⏳ En attente de la connexion DB...');
@@ -434,13 +434,10 @@ async function initializeAlarms() {
             });
         }
         
-        const rappels = await Rappel.find({ completed: false });
-        console.log(`📋 ${rappels.length} rappels à planifier`);
+        // Replanifier toutes les alarmes existantes
+        await replanifierToutesAlarmes();
         
-        for (const rappel of rappels) {
-            planifierRappel(rappel);
-        }
-        
+        // Configurer le vérificateur
         setupAlarmChecker(client);
         console.log('✅ Système d\'alarmes initialisé');
         
@@ -534,6 +531,3 @@ server.on('listening', () => {
     console.log('✅ Serveur HTTP prêt, démarrage du bot...');
     startBot();
 });
-
-// Démarrer le bot
-startBot();
