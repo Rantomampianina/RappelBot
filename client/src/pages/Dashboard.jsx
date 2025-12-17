@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import useTimezone from '../hooks/useTimezone';
+import { formatLocalTime } from '../utils/timezoneDetection';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://rappelbot.onrender.com';
 
@@ -123,12 +125,36 @@ const LatencyMonitor = () => {
 };
 
 const Dashboard = () => {
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [stats, setStats] = useState(null);
   const [guilds, setGuilds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [botLoading, setBotLoading] = useState(true);
+  const [botError, setBotError] = useState(null);
   const [apiLatency, setApiLatency] = useState(null);
-  const [apiCalls, setApiCalls] = useState([]); // Historique des latences
+  const [apiCalls, setApiCalls] = useState([]);
+
+  // Utilisation du hook timezone
+  const {
+    timezone,
+    loading: timezoneLoading,
+    error: timezoneError,
+    isDetected,
+    forceDetection
+  } = useTimezone(currentUserId);
+
+  // Récupérer l'ID utilisateur
+  useEffect(() => {
+    const userId = localStorage.getItem('discord_user_id') || 'user-123';
+    setCurrentUserId(userId);
+  }, []);
+
+  // Debug timezone
+  useEffect(() => {
+    if (timezone && isDetected) {
+      console.log(`🌍 Fuseau utilisé: ${timezone}`);
+      console.log(`🕐 Heure locale: ${formatLocalTime(new Date(), timezone)}`);
+    }
+  }, [timezone, isDetected]);
 
   const fetchBotData = useCallback(async () => {
     const startTime = performance.now();
@@ -152,13 +178,13 @@ const Dashboard = () => {
       
       setStats(statsRes.data);
       setGuilds(guildsRes.data.guilds);
-      setError(null);
+      setBotError(null);
     } catch (err) {
       console.error('Error fetching bot data:', err);
-      setError('Impossible de se connecter au bot');
+      setBotError('Impossible de se connecter au bot');
       setApiLatency(null);
     } finally {
-      setLoading(false);
+      setBotLoading(false);
     }
   }, []);
 
@@ -184,12 +210,15 @@ const Dashboard = () => {
     return `${minutes}m`;
   };
 
-  if (loading) {
+  // Chargement combiné
+  if (botLoading || timezoneLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Connexion au bot...</p>
+          <p className="mt-4 text-gray-400">
+            {timezoneLoading ? 'Détection du fuseau horaire...' : 'Connexion au bot...'}
+          </p>
         </div>
       </div>
     );
@@ -252,29 +281,42 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-lg">
-                <Zap className="w-6 h-6" />
-              </div>
-              Dashboard RappelBot
-            </h1>
-            <p className="text-gray-400 mt-2">Gestion et monitoring en temps réel</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${stats ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-              {stats ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-              <span className="font-semibold">{stats ? 'En ligne' : 'Hors ligne'}</span>
+        {/* Header avec info fuseau */}
+        <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard RappelBot</h1>
+              {timezone && (
+                <div className="mt-2 text-sm text-gray-300">
+                  <span className="inline-flex items-center">
+                    🌍 Fuseau: <span className="ml-2 font-mono bg-gray-700 px-2 py-1 rounded">{timezone}</span>
+                  </span>
+                  <span className="mx-4">•</span>
+                  <span>🕐 {formatLocalTime(new Date(), timezone)}</span>
+                </div>
+              )}
             </div>
-            <button 
-              onClick={fetchBotData}
-              className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
-            >
-              Actualiser
-            </button>
+            
+            <div className="flex items-center space-x-4">
+              {timezoneError && (
+                <div className="text-red-400 text-sm">
+                  ⚠️ {timezoneError}
+                </div>
+              )}
+              
+              {botError && (
+                <div className="text-red-400 text-sm">
+                  ⚠️ {botError}
+                </div>
+              )}
+              
+              <button
+                onClick={forceDetection}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+              >
+                Actualiser fuseau
+              </button>
+            </div>
           </div>
         </div>
 
@@ -503,13 +545,13 @@ const Dashboard = () => {
         </div>
         
         {/* Error Display */}
-        {error && (
+        {botError && (
           <div className="fixed bottom-6 right-6 bg-red-900/50 border border-red-700 text-red-300 p-4 rounded-xl max-w-md">
             <div className="flex items-center gap-3">
               <WifiOff className="w-5 h-5" />
               <div>
                 <p className="font-semibold">Erreur de connexion</p>
-                <p className="text-sm">{error}</p>
+                <p className="text-sm">{botError}</p>
               </div>
             </div>
           </div>

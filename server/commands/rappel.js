@@ -4,11 +4,11 @@ const Rappel = require('../models/Rappel');
 const Config = require('../models/Config');
 // Correction de l'import
 const { planifierRappel } = require('../handlers/alarm');
+const { captureTimezoneFromInteraction } = require('../middlewares/timezoneCapture');
 
 // Fonction pour détecter le fuseau horaire de l'utilisateur
 function detectUserTimezone(interaction) {
-    // Pour l'instant, on utilise Europe/Paris par défaut
-    // Plus tard: stocker le fuseau dans la base de données utilisateur
+    
     return 'Europe/Paris';
 }
 
@@ -23,6 +23,7 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply();
         
+        const userTimezone = await captureTimezoneFromInteraction(interaction);
         const texte = interaction.options.getString('texte');
         let date = interaction.options.getString('date');
         const time = interaction.options.getString('heure');
@@ -92,7 +93,9 @@ module.exports = {
             
             // Planifier l'alarme
             planifierRappel(rappel);
-
+            
+            const localTime = convertToUserTimezone(`${date} ${time}`, userTimezone);
+            await interaction.editReply(`✅ Rappel créé pour ${localTime} (votre heure locale)`);
             const typeLabel = isMeeting ? 'Réunion' : 'Rappel';
             await interaction.editReply(`✅ **${typeLabel} créé**\n**${texte}**\n⏰ ${date} à ${time}`);
 

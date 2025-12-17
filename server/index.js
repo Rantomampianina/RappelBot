@@ -178,6 +178,32 @@ app.get('/api/debug/time', (req, res) => {
     });
 });
 
+app.post('/api/detect-timezone', async (req, res) => {
+    try {
+        const { userId, browserData } = req.body;
+        
+        const context = {
+            browserTimezone: browserData.timezone,
+            userAgent: browserData.userAgent,
+            languages: browserData.languages,
+            platform: browserData.platform,
+            ipAddress: req.ip // Récupérer l'IP réelle depuis le frontend
+        };
+        
+        const detection = await TimezoneDetector.detectTimezone(userId, context);
+        
+        res.json({
+            success: true,
+            timezone: detection.timezone,
+            confidence: detection.confidence,
+            source: detection.source
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: 'Detection failed' });
+    }
+});
+
 // Fonction helper (ajoutez-la dans index.js ou importez-la)
 function getTimezoneOffset(timezone) {
     try {
