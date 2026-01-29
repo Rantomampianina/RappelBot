@@ -1,11 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 const BubbleParticles = () => {
-  const [bubbles, setBubbles] = useState([]);
+  // Helper function defined inside or outside, but here inside to keep it self-contained in the diff
+  // Initializing state lazily to avoid useEffect and extra renders
+  const [bubbles] = useState(() => {
+    const getRandomColor = () => {
+      const colors = [
+        'rgba(6, 182, 212, 0.3)', // Cyan
+        'rgba(124, 58, 237, 0.3)', // Purple
+        'rgba(59, 130, 246, 0.3)', // Blue
+        'rgba(255, 255, 255, 0.2)', // White transparent
+        'rgba(167, 139, 250, 0.3)', // Light purple
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    };
 
-  useEffect(() => {
-    // Generate 30 bubbles with random properties
-    const newBubbles = Array.from({ length: 30 }, (_, i) => ({
+    return Array.from({ length: 30 }, (_, i) => ({
       id: i,
       left: Math.random() * 100, // Random horizontal position (%)
       size: Math.random() * 40 + 20, // Size between 20-60px
@@ -14,19 +24,7 @@ const BubbleParticles = () => {
       opacity: Math.random() * 0.4 + 0.1, // Opacity 0.1-0.5
       color: getRandomColor(),
     }));
-    setBubbles(newBubbles);
-  }, []);
-
-  const getRandomColor = () => {
-    const colors = [
-      'rgba(6, 182, 212, 0.3)', // Cyan
-      'rgba(124, 58, 237, 0.3)', // Purple
-      'rgba(59, 130, 246, 0.3)', // Blue
-      'rgba(255, 255, 255, 0.2)', // White transparent
-      'rgba(167, 139, 250, 0.3)', // Light purple
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
+  });
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
