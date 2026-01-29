@@ -28,6 +28,65 @@ app.use(express.json());
 
 // ================== API ROUTES (MONITORING) ==================
 
+// SIMPLE DASHBOARD AUTH MIDDLEWARE
+const verifyDashboardAccess = (req, res, next) => {
+    const { key } = req.query;
+    const expectedKey = process.env.DASHBOARD_ACCESS_KEY;
+
+    if (!expectedKey) {
+        return res.status(500).json({ error: 'Dashboard access not configured' });
+    }
+
+    if (key !== expectedKey) {
+        return res.status(403).json({ error: 'Invalid access key' });
+    }
+
+    next();
+};
+
+// Protected stats endpoint (requires key)
+app.get('/api/dashboard/stats', verifyDashboardAccess, (req, res) => {
+    try {
+        const reminderStats = getStats();
+
+        res.json({
+            status: 'online',
+            uptime: process.uptime(),
+            botUptime: client?.uptime || 0,
+            guilds: client?.guilds?.cache?.size || 0,
+            users: client?.users?.cache?.size || 0,
+            commands: client.commands?.size || 0,
+            reminders: reminderStats,
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+            },
+            timestamp: new Date().toISOString(),
+            version: '2.0.0'
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Protected guilds endpoint (requires key)
+app.get('/api/dashboard/guilds', verifyDashboardAccess, (req, res) => {
+    try {
+        const guilds = client?.guilds?.cache?.map(guild => ({
+            id: guild.id,
+            name: guild.name,
+            members: guild.memberCount,
+            icon: guild.iconURL({ size: 128 }),
+            joinedAt: guild.joinedAt
+        })) || [];
+
+        res.json({ guilds });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Stats du bot
 app.get('/api/bot/stats', (req, res) => {
     try {
