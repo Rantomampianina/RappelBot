@@ -1,28 +1,45 @@
 const { SlashCommandBuilder } = require('discord.js');
-const Rappel = require('../models/Rappel');
-const Historique = require('../models/Historique');
+const { deleteReminder, getReminder } = require('../store/reminders');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('supprimer')
-        .setDescription('Supprime un rappel')
-        .addIntegerOption(o => o.setName('index').setDescription('Numéro du rappel').setRequired(true)),
+        .setDescription('Supprimer un rappel')
+        .addStringOption(option =>
+            option.setName('id')
+                .setDescription('ID du rappel à supprimer')
+                .setRequired(true)),
 
     async execute(interaction) {
-        await interaction.deferReply();
-        const idx = interaction.options.getInteger('index') - 1;
-        const rappels = await Rappel.find({ user: interaction.user.id }).sort({ date: 1, time: 1 });
-        if (idx < 0 || idx >= rappels.length) return interaction.editReply("Index invalide.");
+        await interaction.deferReply({ ephemeral: true });
 
-        const r = rappels[idx];
-        await Rappel.deleteOne({ _id: r._id });
+        try {
+            const reminderId = interaction.options.getString('id');
+            const userId = interaction.user.id;
 
-        await new Historique({
-            user: interaction.user.id,
-            action: 'supprimé',
-            rappel: r.toObject()
-        }).save();
+            // Vérifier que le rappel existe et appartient à l'utilisateur
+            const reminder = getReminder(reminderId);
 
-        await interaction.editReply(`Supprimé : **${r.text}**`);
+            if (!reminder) {
+                return interaction.editReply('❌ Rappel introuvable.');
+            }
+
+            if (reminder.userId !== userId) {
+                return interaction.editReply('❌ Vous ne pouvez supprimer que vos propres rappels.');
+            }
+
+            // Supprimer le rappel
+            const success = deleteReminder(reminderId);
+
+            if (success) {
+                await interaction.editReply(`✅ Rappel supprimé:\n"${reminder.message}"`);
+            } else {
+                await interaction.editReply('❌ Erreur lors de la suppression du rappel.');
+            }
+
+        } catch (error) {
+            console.error('❌ Erreur suppression rappel:', error);
+            await interaction.editReply('❌ Erreur lors de la suppression du rappel');
+        }
     }
 };

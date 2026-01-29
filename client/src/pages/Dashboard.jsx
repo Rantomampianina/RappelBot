@@ -2,17 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Server, Users, Bell, Clock, 
   Cpu, Database, Activity, TrendingUp,
-  Shield, Zap, Globe, Wifi, WifiOff,
-  Home, Settings, BarChart3, LogOut
+  Shield, Zap, Home, BarChart3, WifiOff
 } from 'lucide-react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
-import useTimezone from '../hooks/useTimezone';
-import { formatLocalTime } from '../utils/timezoneDetection';
+import { fetchBotStats, fetchGuilds, fetchPing } from '../services/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://rappelbot.onrender.com';
-
-// Composant LatencyMonitor (déplacé hors du Dashboard)
+// Composant LatencyMonitor
 const LatencyMonitor = () => {
   const [latencyHistory, setLatencyHistory] = useState([]);
   const [currentPing, setCurrentPing] = useState(null);
@@ -22,20 +17,15 @@ const LatencyMonitor = () => {
     if (isPinging) return;
     
     setIsPinging(true);
-    const startTime = performance.now();
     
     try {
-      await axios.get(`${API_URL}/health`, {
-        timeout: 5000
-      });
-      
-      const endTime = performance.now();
-      const latency = Math.round(endTime - startTime);
+      const data = await fetchPing();
+      const latency = data.latency || Math.round(data.roundTripTime / 2);
       
       setCurrentPing(latency);
       setLatencyHistory(prev => {
         const newHistory = [...prev, { time: Date.now(), latency }];
-        return newHistory.slice(-20); // Garder 20 dernières mesures
+        return newHistory.slice(-20);
       });
       
     } catch (error) {
@@ -46,10 +36,9 @@ const LatencyMonitor = () => {
     }
   }, [isPinging]);
 
-  // Ping automatique toutes les 30 secondes
   useEffect(() => {
     const interval = setInterval(pingAPI, 30000);
-    pingAPI(); // Premier ping immédiat
+    pingAPI();
     
     return () => clearInterval(interval);
   }, [pingAPI]);
@@ -92,7 +81,6 @@ const LatencyMonitor = () => {
         </div>
       </div>
       
-      {/* Graphique simple */}
       {latencyHistory.length > 1 && (
         <div className="mt-4">
           <div className="text-xs text-gray-400 mb-2">
@@ -125,64 +113,24 @@ const LatencyMonitor = () => {
 };
 
 const Dashboard = () => {
-  const [currentUserId, setCurrentUserId] = useState(null);
   const [stats, setStats] = useState(null);
   const [guilds, setGuilds] = useState([]);
   const [botLoading, setBotLoading] = useState(true);
   const [botError, setBotError] = useState(null);
-  const [apiLatency, setApiLatency] = useState(null);
-  const [apiCalls, setApiCalls] = useState([]);
-
-  // Utilisation du hook timezone
-  const {
-    timezone,
-    loading: timezoneLoading,
-    error: timezoneError,
-    isDetected,
-    forceDetection
-  } = useTimezone(currentUserId);
-
-  // Récupérer l'ID utilisateur
-  useEffect(() => {
-    const userId = localStorage.getItem('discord_user_id') || 'user-123';
-    setCurrentUserId(userId);
-  }, []);
-
-  // Debug timezone
-  useEffect(() => {
-    if (timezone && isDetected) {
-      console.log(`🌍 Fuseau utilisé: ${timezone}`);
-      console.log(`🕐 Heure locale: ${formatLocalTime(new Date(), timezone)}`);
-    }
-  }, [timezone, isDetected]);
 
   const fetchBotData = useCallback(async () => {
-    const startTime = performance.now();
-    
     try {
-      const [statsRes, guildsRes] = await Promise.all([
-        axios.get(`${API_URL}/api/bot/stats`),
-        axios.get(`${API_URL}/api/bot/guilds`)
+      const [statsData, guildsData] = await Promise.all([
+        fetchBotStats(),
+        fetchGuilds()
       ]);
-
-      const endTime = performance.now();
-      const latency = Math.round(endTime - startTime);
       
-      setApiLatency(latency);
-
-      // Garder les 10 dernières mesures
-      setApiCalls(prev => {
-        const newCalls = [...prev, { time: Date.now(), latency }];
-        return newCalls.slice(-10);
-      });
-      
-      setStats(statsRes.data);
-      setGuilds(guildsRes.data.guilds);
+      setStats(statsData);
+      setGuilds(guildsData.guilds || []);
       setBotError(null);
     } catch (err) {
       console.error('Error fetching bot data:', err);
       setBotError('Impossible de se connecter au bot');
-      setApiLatency(null);
     } finally {
       setBotLoading(false);
     }
@@ -194,12 +142,6 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [fetchBotData]);
 
-  // Calculer la latence moyenne
-  const averageLatency = apiCalls.length > 0 
-    ? Math.round(apiCalls.reduce((sum, call) => sum + call.latency, 0) / apiCalls.length)
-    : null;
-  
-
   const formatUptime = (seconds) => {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -210,15 +152,12 @@ const Dashboard = () => {
     return `${minutes}m`;
   };
 
-  // Chargement combiné
-  if (botLoading || timezoneLoading) {
+  if (botLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">
-            {timezoneLoading ? 'Détection du fuseau horaire...' : 'Connexion au bot...'}
-          </p>
+          <p className="mt-4 text-gray-400">Connexion au bot...</p>
         </div>
       </div>
     );
@@ -230,7 +169,7 @@ const Dashboard = () => {
       <div className="hidden md:flex w-64 bg-gray-800/50 backdrop-blur-lg flex-col p-6 border-r border-gray-700">
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-2">Dashboard</h2>
-          <p className="text-gray-400 text-sm">Espace administrateur</p>
+          <p className="text-gray-400 text-sm">Monitoring RappelBot</p>
         </div>
         
         <nav className="space-y-2 flex-1">
@@ -239,85 +178,24 @@ const Dashboard = () => {
             className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition"
           >
             <Home className="w-5 h-5" />
-            Accueil public
+            Accueil
           </Link>
           <a 
             href="#" 
             className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg"
           >
             <BarChart3 className="w-5 h-5" />
-            Vue d'ensemble
-          </a>
-          <a 
-            href="#" 
-            className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition"
-          >
-            <Users className="w-5 h-5" />
-            Serveurs
-          </a>
-          <a 
-            href="#" 
-            className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition"
-          >
-            <Bell className="w-5 h-5" />
-            Rappels
-          </a>
-          <a 
-            href="#" 
-            className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition"
-          >
-            <Settings className="w-5 h-5" />
-            Paramètres
+            Statistiques
           </a>
         </nav>
-        
-        <div className="pt-6 border-t border-gray-700">
-          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg transition">
-            <LogOut className="w-5 h-5" />
-            Déconnexion
-          </button>
-        </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-y-auto">
-        {/* Header avec info fuseau */}
-        <div className="mb-6 p-4 bg-gray-800 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Dashboard RappelBot</h1>
-              {timezone && (
-                <div className="mt-2 text-sm text-gray-300">
-                  <span className="inline-flex items-center">
-                    🌍 Fuseau: <span className="ml-2 font-mono bg-gray-700 px-2 py-1 rounded">{timezone}</span>
-                  </span>
-                  <span className="mx-4">•</span>
-                  <span>🕐 {formatLocalTime(new Date(), timezone)}</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {timezoneError && (
-                <div className="text-red-400 text-sm">
-                  ⚠️ {timezoneError}
-                </div>
-              )}
-              
-              {botError && (
-                <div className="text-red-400 text-sm">
-                  ⚠️ {botError}
-                </div>
-              )}
-              
-              <button
-                onClick={forceDetection}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
-              >
-                Actualiser fuseau
-              </button>
-            </div>
-          </div>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Dashboard RappelBot v2.0</h1>
+          <p className="text-gray-400 mt-2">Monitoring et statistiques en temps réel</p>
         </div>
 
         {/* Stats Grid */}
@@ -346,7 +224,7 @@ const Dashboard = () => {
               <span className="text-3xl font-bold">{stats?.reminders?.active || 0}</span>
             </div>
             <h3 className="text-lg font-semibold">Rappels actifs</h3>
-            <p className="text-gray-400 text-sm">En attente</p>
+            <p className="text-gray-400 text-sm">En mémoire</p>
           </div>
           
           <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
@@ -370,24 +248,6 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-gray-900/50 rounded-xl">
                 <div className="flex items-center gap-3 mb-2">
-                  <Cpu className="w-5 h-5 text-green-500" />
-                  <span className="text-sm text-gray-400">CPU</span>
-                </div>
-                <div className="flex items-end gap-2">
-                  <span className="text-2xl font-bold">
-                    {stats?.memory ? `${Math.round((stats.memory.used / stats.memory.total) * 100)}%` : '0%'}
-                  </span>
-                  <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-linear-to-r from-green-500 to-blue-500 rounded-full"
-                      style={{ width: stats?.memory ? `${Math.round((stats.memory.used / stats.memory.total) * 100)}%` : '0%' }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-gray-900/50 rounded-xl">
-                <div className="flex items-center gap-3 mb-2">
                   <Database className="w-5 h-5 text-purple-500" />
                   <span className="text-sm text-gray-400">RAM</span>
                 </div>
@@ -401,11 +261,11 @@ const Dashboard = () => {
               
               <div className="p-4 bg-gray-900/50 rounded-xl">
                 <div className="flex items-center gap-3 mb-2">
-                  <Globe className="w-5 h-5 text-yellow-500" />
+                  <Zap className="w-5 h-5 text-yellow-500" />
                   <span className="text-sm text-gray-400">Commandes</span>
                 </div>
                 <div className="text-2xl font-bold">{stats?.commands || 0}</div>
-                <p className="text-gray-400 text-sm">Commandes enregistrées</p>
+                <p className="text-gray-400 text-sm">Enregistrées</p>
               </div>
               
               <div className="p-4 bg-gray-900/50 rounded-xl">
@@ -416,93 +276,41 @@ const Dashboard = () => {
                 <div className="text-2xl font-bold">{stats?.reminders?.total || 0}</div>
                 <p className="text-gray-400 text-sm">Depuis le début</p>
               </div>
+              
+              <div className="p-4 bg-gray-900/50 rounded-xl">
+                <div className="flex items-center gap-3 mb-2">
+                  <Database className="w-5 h-5 text-green-500" />
+                  <span className="text-sm text-gray-400">Stockage</span>
+                </div>
+                <div className="text-lg font-bold">RAM</div>
+                <p className="text-gray-400 text-sm">En mémoire</p>
+              </div>
             </div>
 
-            {/* Ajoutez le moniteur de latence ici */}
             <LatencyMonitor />
           </div>
           
           <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
               <TrendingUp className="w-6 h-6 text-green-500" />
-              Statistiques rapides
+              Types de rappels
             </h2>
             
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-gray-400">Taux d'utilisation</span>
-                  <span className="font-semibold">
-                    {stats?.guilds ? `${Math.min(stats.guilds * 10, 100)}%` : '0%'}
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-linear-to-r from-blue-500 to-purple-500 rounded-full"
-                    style={{ width: stats?.guilds ? `${Math.min(stats.guilds * 10, 100)}%` : '0%' }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-gray-400">Stabilité</span>
-                  <span className="font-semibold text-green-500">100%</span>
-                </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-linear-to-r from-green-500 to-emerald-500 rounded-full w-full"></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-gray-400">Latence API</span>
-                  <div className="flex items-center gap-2">
-                    {apiLatency ? (
-                      <>
-                        <span className={`font-semibold ${
-                          apiLatency < 100 ? 'text-green-500' : 
-                          apiLatency < 300 ? 'text-yellow-500' : 
-                          'text-red-500'
-                        }`}>
-                          {apiLatency}ms
-                        </span>
-                        {apiCalls.length > 1 && (
-                          <span className="text-xs text-gray-500">
-                            (moy: {averageLatency}ms)
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-gray-500">--</span>
-                    )}
+            <div className="space-y-3">
+              {stats?.reminders?.byType && Object.entries(stats.reminders.byType).map(([type, count]) => (
+                <div key={type}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-gray-400 capitalize">{type}</span>
+                    <span className="font-semibold">{count}</span>
+                  </div>
+                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                      style={{ width: stats.reminders.active > 0 ? `${(count / stats.reminders.active) * 100}%` : '0%' }}
+                    ></div>
                   </div>
                 </div>
-                <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      !apiLatency ? 'w-0' :
-                      apiLatency < 50 ? 'bg-linear-to-r from-green-500 to-emerald-500' :
-                      apiLatency < 100 ? 'bg-linear-to-r from-green-500 to-yellow-500' :
-                      apiLatency < 200 ? 'bg-linear-to-r from-yellow-500 to-orange-500' :
-                      'bg-linear-to-r from-orange-500 to-red-500'
-                    }`}
-                    style={{ 
-                      width: apiLatency 
-                        ? `${Math.min(100, Math.max(10, 100 - (apiLatency / 5)))}%` 
-                        : '0%' 
-                    }}
-                  ></div>
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {apiLatency ? (
-                    apiLatency < 50 ? '⚡ Excellent' :
-                    apiLatency < 100 ? '✅ Bon' :
-                    apiLatency < 200 ? '⚠️ Moyen' :
-                    '🐌 Lent'
-                  ) : 'Pas de mesure'}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -526,7 +334,7 @@ const Dashboard = () => {
                     {guild.icon ? (
                       <img src={guild.icon} alt={guild.name} className="w-12 h-12 rounded-xl" />
                     ) : (
-                      <div className="w-12 h-12 bg-linear-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                         <Server className="w-6 h-6" />
                       </div>
                     )}

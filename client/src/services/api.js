@@ -9,6 +9,8 @@ const api = axios.create({
   },
 });
 
+// ==================== MONITORING API ====================
+
 export const fetchApiStatus = async () => {
   try {
     const response = await api.get('/api/status');
@@ -19,12 +21,33 @@ export const fetchApiStatus = async () => {
   }
 };
 
-export const fetchUserReminders = async (userId) => {
+export const fetchBotStats = async () => {
   try {
-    const response = await api.get(`/api/reminders/${userId}`);
+    const response = await api.get('/api/bot/stats');
     return response.data;
   } catch (error) {
-    console.error('Error fetching reminders:', error);
+    console.error('Error fetching bot stats:', error);
+    throw error;
+  }
+};
+
+export const fetchGuilds = async () => {
+  try {
+    const response = await api.get('/api/bot/guilds');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching guilds:', error);
+    throw error;
+  }
+};
+
+export const fetchPing = async () => {
+  try {
+    const startTime = Date.now();
+    const response = await api.get(`/api/ping?start=${startTime}`);
+    return response.data;
+  } catch (error) {
+    console.error('Ping error:', error);
     throw error;
   }
 };

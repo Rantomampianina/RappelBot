@@ -1,106 +1,143 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const analyze = require('../utils/IA');
-const Rappel = require('../models/Rappel');
-const Config = require('../models/Config');
-// Correction de l'import
-const { planifierRappel } = require('../handlers/alarm');
-const { captureTimezoneFromInteraction } = require('../middlewares/timezoneCapture');
-
-// Fonction pour détecter le fuseau horaire de l'utilisateur
-function detectUserTimezone(interaction) {
-    
-    return 'Europe/Paris';
-}
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { createReminder, ReminderTypes } = require('../store/reminders');
+const { parseReminderCommand, getTriggerDescription } = require('../utils/context');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('rappel')
-        .setDescription('Ajoute un rappel intelligent')
-        .addStringOption(o => o.setName('texte').setDescription('Texte du rappel').setRequired(true))
-        .addStringOption(o => o.setName('heure').setDescription('Heure (HH:MM)').setRequired(true))
-        .addStringOption(o => o.setName('date').setDescription('Date (JJ/MM/AAAA)').setRequired(false)),
+        .setDescription('Créer un rappel contextuel')
+        .addStringOption(option =>
+            option.setName('type')
+                .setDescription('Type de rappel')
+                .setRequired(true)
+                .addChoices(
+                    { name: '⏰ Temporisé (dans X minutes/heures)', value: 'timer' },
+                    { name: '👤 Mention utilisateur', value: 'mention' },
+                    { name: '🔑 Mot-clé', value: 'keyword' },
+                    { name: '😊 Réaction emoji', value: 'reaction' },
+                    { name: '💬 Thread', value: 'thread' }
+                ))
+        .addStringOption(option =>
+            option.setName('trigger')
+                .setDescription('Déclencheur (ex: "dans 30m", "@user", "urgent", "emoji:✅ #canal")')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('message')
+                .setDescription('Message du rappel')
+                .setRequired(true)),
 
     async execute(interaction) {
         await interaction.deferReply();
-        
-        const userTimezone = await captureTimezoneFromInteraction(interaction);
-        const texte = interaction.options.getString('texte');
-        let date = interaction.options.getString('date');
-        const time = interaction.options.getString('heure');
-        const userId = interaction.user.id;
-        const guildId = interaction.guildId || 'dm';
-
-        // Validation de l'heure
-        if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-            return interaction.editReply('❌ Format d\'heure invalide. Utilisez HH:MM (ex: 14:30)');
-        }
-
-        // Date par défaut = aujourd'hui
-        if (!date) {
-            const today = new Date();
-            date = `${today.getDate().toString().padStart(2,'0')}/${(today.getMonth()+1).toString().padStart(2,'0')}/${today.getFullYear()}`;
-        }
-
-        // Validation de la date
-        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
-            return interaction.editReply('❌ Format de date invalide. Utilisez JJ/MM/AAAA');
-        }
 
         try {
-            // Analyse IA
-            const { isMeeting, duration, duplicates } = await analyze(texte, userId);
-            
-            console.log('Analyse IA:', { isMeeting, duration, duplicates: duplicates.length });
+            const type = interaction.options.getString('type');
+            const triggerText = interaction.options.getString('trigger');
+            const message = interaction.options.getString('message');
+            const userId = interaction.user.id;
+            const guildId = interaction.guildId;
+            const channelId = interaction.channelId;
 
-            if (duplicates.length > 0) {
-                return interaction.editReply({
-                    content: `⚠️ **Doublon détecté !**\nUn rappel similaire existe déjà : "${duplicates[0].text}"`,
-                    ephemeral: true
-                });
-            }
+            // Parser le trigger selon le type
+            let trigger = {};
+            let valid = true;
+            let errorMessage = '';
 
-            // Cas réunion avec Google Calendar
-            if (isMeeting && duration > 15) {
-                const config = await Config.findOne({ guildId });
-                if (config?.useGoogleCalendar) {
-                    const row = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(`create_google_${Date.now()}`)
-                            .setLabel('📅 Créer sur Google Calendar')
-                            .setStyle(ButtonStyle.Success)
-                    );
-                    return interaction.editReply({ 
-                        content: `📅 **Réunion détectée**\n**${texte}**\n⏰ ${date} à ${time} (${duration}min)`,
-                        components: [row] 
-                    });
+            switch (type) {
+                case 'timer': {
+                    const { parseTimerTrigger } = require('../utils/context');
+                    trigger = parseTimerTrigger(triggerText);
+                    if (!trigger || !trigger.delay) {
+                        valid = false;
+                        errorMessage = '❌ Format invalide. Utilisez: "dans 30m", "dans 2h", "dans 1j"';
+                    }
+                    break;
+                }
+                case 'mention': {
+                    const { parseMentionTrigger } = require('../utils/context');
+                    trigger = parseMentionTrigger(triggerText);
+                    if (!trigger || !trigger.userId) {
+                        valid = false;
+                        errorMessage = '❌ Format invalide. Mentionnez un utilisateur: @user';
+                    }
+                    break;
+                }
+                case 'keyword': {
+                    const { parseKeywordTrigger } = require('../utils/context');
+                    trigger = parseKeywordTrigger(triggerText);
+                    if (!trigger || !trigger.keyword) {
+                        valid = false;
+                        errorMessage = '❌ Format invalide. Utilisez: "mot-clé" ou keyword:"urgent"';
+                    }
+                    break;
+                }
+                case 'reaction': {
+                    const { parseReactionTrigger } = require('../utils/context');
+                    trigger = parseReactionTrigger(triggerText);
+                    if (!trigger || !trigger.emoji) {
+                        valid = false;
+                        errorMessage = '❌ Format invalide. Utilisez: emoji:✅ #canal';
+                    }
+                    break;
+                }
+                case 'thread': {
+                    const { parseThreadTrigger } = require('../utils/context');
+                    trigger = parseThreadTrigger(triggerText);
+                    if (!trigger || !trigger.threadId) {
+                        valid = false;
+                        errorMessage = '❌ Format invalide. Utilisez l\'ID du thread';
+                    }
+                    break;
                 }
             }
 
-            // Création du rappel normal
-            const userTimezone = detectUserTimezone(interaction);
-            const rappel = new Rappel({ 
-                user: userId, 
-                text: texte, 
-                date, 
-                time, 
-                duration,
-                channelId: interaction.channelId,
-                completed: false,
-                timezone: userTimezone // Ajout du fuseau détecté
+            if (!valid) {
+                return interaction.editReply(errorMessage);
+            }
+
+            // Créer le rappel
+            const reminder = createReminder({
+                userId,
+                guildId,
+                type,
+                trigger,
+                message,
+                channelId
             });
 
-            await rappel.save();
-            
-            // Planifier l'alarme
-            planifierRappel(rappel);
-            
-            const localTime = convertToUserTimezone(`${date} ${time}`, userTimezone);
-            await interaction.editReply(`✅ Rappel créé pour ${localTime} (votre heure locale)`);
-            const typeLabel = isMeeting ? 'Réunion' : 'Rappel';
-            await interaction.editReply(`✅ **${typeLabel} créé**\n**${texte}**\n⏰ ${date} à ${time}`);
+            // Pour les timers, planifier immédiatement
+            if (type === 'timer' && trigger.delay) {
+                setTimeout(async () => {
+                    try {
+                        const user = await interaction.client.users.fetch(userId);
+                        const embed = new EmbedBuilder()
+                            .setTitle('🔔 Rappel')
+                            .setDescription(message)
+                            .setColor(0x00AE86)
+                            .setTimestamp();
+
+                        await user.send({ embeds: [embed] });
+
+                        const { deleteReminder } = require('../store/reminders');
+                        deleteReminder(reminder.id);
+                    } catch (error) {
+                        console.error('❌ Erreur envoi rappel timer:', error);
+                    }
+                }, trigger.delay);
+            }
+
+            // Réponse de confirmation
+            const description = getTriggerDescription(type, trigger);
+            const embed = new EmbedBuilder()
+                .setTitle('✅ Rappel créé')
+                .setDescription(`**Message:** ${message}\n**Déclencheur:** ${description}`)
+                .setColor(0x00AE86)
+                .setFooter({ text: `ID: ${reminder.id}` })
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [embed] });
 
         } catch (error) {
-            console.error('Erreur création rappel:', error);
+            console.error('❌ Erreur création rappel:', error);
             await interaction.editReply('❌ Erreur lors de la création du rappel');
         }
     }
