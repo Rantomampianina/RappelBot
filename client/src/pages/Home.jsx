@@ -1,212 +1,238 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Zap,
-  Shield,
-  Cpu,
-  Globe,
-  Users,
-  BarChart3,
-  Bot,
-  Sparkles,
-  Gamepad2,
-  Rocket,
-  Code,
-  Lock
-} from 'lucide-react';
-import axios from 'axios';
+import { Clock, User, Smile, Key, Zap, Shield, TrendingUp } from 'lucide-react';
+import BubbleParticles from '../components/BubbleParticles';
+import MouseLight from '../components/MouseLight';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://rappelbot.onrender.com';
-
-const Home = () => {
-  const [stats, setStats] = useState(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
-
-  useEffect(() => {
-    axios.get(`${API_URL}/api/bot/stats`)
-      .then(res => setStats(res.data))
-      .catch(console.error);
-  }, []);
-
-  const features = [
-    {
-      icon: <Sparkles className="w-8 h-8" />,
-      title: "IA Intégrée",
-      description: "Algorithmes d'IA pour des rappels intelligents",
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      icon: <Bot className="w-8 h-8" />,
-      title: "Automation",
-      description: "Automatisation complète des tâches répétitives",
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      icon: <Gamepad2 className="w-8 h-8" />,
-      title: "Gamification",
-      description: "Système de niveaux et récompenses",
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      icon: <Rocket className="w-8 h-8" />,
-      title: "Performance",
-      description: "Latence ultra-faible < 50ms",
-      color: "from-orange-500 to-red-500"
-    },
-    {
-      icon: <Code className="w-8 h-8" />,
-      title: "API Complète",
-      description: "Documentation développeur",
-      color: "from-indigo-500 to-purple-500"
-    },
-    {
-      icon: <Lock className="w-8 h-8" />,
-      title: "Sécurité",
-      description: "Chiffrement end-to-end",
-      color: "from-gray-700 to-gray-900"
-    }
-  ];
-
+const HomePage = () => {
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 text-white overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-      </div>
-
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950 overflow-hidden">
+      {/* Particle Effects */}
+      <BubbleParticles />
+      <MouseLight />
+      
+      {/* Main Content */}
       <div className="relative z-10">
         {/* Hero Section */}
-        <section className="container mx-auto px-6 pt-20 pb-32 text-center">
-
-          <Link to="/dashboard">
-            <button className="px-10 py-5 bg-gray-800/50 backdrop-blur-lg border-2 border-gray-700 rounded-2xl font-bold text-xl hover:border-blue-500 hover:bg-gray-800 transition-all duration-300">
-              Dashboard Admin
-            </button>
-          </Link>
-
-          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 bg-linear-to-br from-blue-600/20 to-purple-600/20 rounded-2xl border border-blue-500/30">
-            <div className="animate-pulse">
-              <Zap className="w-5 h-5 text-yellow-500" />
-            </div>
-            <span className="text-lg font-semibold bg-linear-to-br from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              VERSION PRO LIVE
-            </span>
-          </div>
-          
-          <h1 className="text-7xl md:text-8xl font-bold mb-6 leading-tight">
-            <span className="bg-linear-to-br from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              RappelBot
-            </span>
-            <span className="block text-4xl md:text-5xl mt-4 text-gray-300">
-              Gaming meets Productivity
-            </span>
-          </h1>
-          
-          <p className="text-2xl text-gray-300 max-w-3xl mx-auto mb-10">
-            Le bot Discord qui transforme votre productivité en{" "}
-            <span className="text-transparent bg-clip-text bg-linear-to-br from-blue-400 to-purple-400 font-bold">
-              expérience gaming
-            </span>
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-            <button className="group relative px-10 py-5 bg-linear-to-br from-blue-600 to-purple-600 rounded-2xl font-bold text-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/30">
-              <div className="absolute inset-0 bg-linear-to-br from-blue-400 to-purple-400 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity"></div>
-              <span className="relative">Ajouter au Discord</span>
-            </button>
-            
-            <Link to="/dashboard">
-              <button className="px-10 py-5 bg-gray-800/50 backdrop-blur-lg border-2 border-gray-700 rounded-2xl font-bold text-xl hover:border-blue-500 hover:bg-gray-800 transition-all duration-300">
-                Dashboard Pro
-              </button>
-            </Link>
-          </div>
-
-          {/* Live Stats */}
-          <div className="inline-flex items-center gap-8 p-6 bg-gray-800/30 backdrop-blur-lg rounded-2xl border border-gray-700">
-            {stats && (
-              <>
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-linear-to-br from-green-400 to-cyan-400 bg-clip-text text-transparent">
-                    {stats.guilds}+
-                  </div>
-                  <div className="text-gray-400">Serveurs</div>
-                </div>
-                <div className="h-12 w-px bg-linear-to-b from-transparent via-gray-600 to-transparent"></div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-linear-to-br from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                    {stats.users}+
-                  </div>
-                  <div className="text-gray-400">Utilisateurs</div>
-                </div>
-                <div className="h-12 w-px bg-linear-to-b from-transparent via-gray-600 to-transparent"></div>
-                <div className="text-center">
-                  <div className="text-4xl font-bold bg-linear-to-br from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    24/7
-                  </div>
-                  <div className="text-gray-400">Uptime</div>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Features Grid */}
-        <section className="container mx-auto px-6 py-20">
-          <h2 className="text-5xl font-bold text-center mb-16">
-            <span className="bg-linear-to-br from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Features Pro
-            </span>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="relative group"
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                <div className={`absolute inset-0 bg-linear-to-br ${feature.color} rounded-3xl blur-xl transition-opacity duration-500 ${
-                  hoveredCard === index ? 'opacity-50' : 'opacity-0'
-                }`}></div>
-                
-                <div className="relative bg-gray-800/50 backdrop-blur-lg rounded-3xl p-8 border-2 border-gray-700 group-hover:border-transparent transition-all duration-500 group-hover:scale-105">
-                  <div className={`inline-flex p-4 rounded-2xl bg-linear-to-br ${feature.color} mb-6`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
-                  <p className="text-gray-400">{feature.description}</p>
+        <section className="container mx-auto px-6 pt-20 pb-32">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Logo/Icon */}
+            <div className="mb-8 flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-3xl blur-xl opacity-50 animate-pulse" />
+                <div className="relative bg-gradient-to-br from-blue-600 to-purple-600 p-6 rounded-3xl shadow-2xl">
+                  <Zap className="w-16 h-16 text-white" />
                 </div>
               </div>
-            ))}
+            </div>
+            
+            {/* Title */}
+            <h1 className="text-7xl md:text-8xl font-black mb-6 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent animate-gradient">
+              RappelBot
+            </h1>
+            
+            {/* Slogan */}
+            <p className="text-3xl md:text-4xl font-light text-gray-300 mb-4">
+              Simple. Contextuel. Efficace.
+            </p>
+            
+            <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+              Ne ratez plus jamais un événement important grâce aux rappels intelligents et contextuels directement dans Discord.
+            </p>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+              <a
+                href="#"
+                className="group relative px-10 py-5 rounded-2xl font-bold text-lg text-white overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 transition-transform duration-300 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative flex items-center gap-3">
+                  <Zap className="w-6 h-6" />
+                  Ajouter au Discord
+                </span>
+              </a>
+              
+              <Link
+                to="/dashboard"
+                className="group px-10 py-5 rounded-2xl font-bold text-lg text-white backdrop-blur-lg bg-white/10 border-2 border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              >
+                <span className="flex items-center gap-3">
+                  📚 Voir les Commandes
+                </span>
+              </Link>
+            </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="container mx-auto px-6 py-20">
-          <div className="bg-linear-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-lg rounded-3xl p-12 border-2 border-gray-700 text-center">
-            <h2 className="text-4xl font-bold mb-6">
-              Prêt à booster votre productivité ?
+        {/* Features Section */}
+        <section className="container mx-auto px-6 pb-20">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
+            Types de Rappels Contextuels
+          </h2>
+          <p className="text-xl text-gray-400 text-center mb-16 max-w-2xl mx-auto">
+            Créez des rappels adaptés à vos besoins avec différents déclencheurs
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Timer Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+              <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl min-h-[280px] flex flex-col">
+                <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                  <Clock className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">⏰ Timer Relatif</h3>
+                <p className="text-gray-400 mb-4">
+                  Programmez des rappels dans le futur
+                </p>
+                <code className="text-sm text-cyan-400 bg-gray-900/50 px-3 py-2 rounded-lg block">
+                  /rappel dans 2h
+                </code>
+              </div>
+            </div>
+
+            {/* Mention Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-pink-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+              <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">👤 Mention</h3>
+                <p className="text-gray-400 mb-4">
+                  Soyez notifié lors d'une mention
+                </p>
+                <code className="text-sm text-purple-400 bg-gray-900/50 px-3 py-2 rounded-lg block">
+                  @utilisateur
+                </code>
+              </div>
+            </div>
+
+            {/* Reaction Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/20 to-orange-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+              <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Smile className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">😊 Réaction</h3>
+                <p className="text-gray-400 mb-4">
+                  Déclencheur par emoji
+                </p>
+                <code className="text-sm text-yellow-400 bg-gray-900/50 px-3 py-2 rounded-lg block">
+                  emoji:✅ #canal
+                </code>
+              </div>
+            </div>
+
+            {/* Keyword Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-emerald-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+              <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                <div className="mb-6 w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                  <Key className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">🔑 Mot-clé</h3>
+                <p className="text-gray-400 mb-4">
+                  Surveillez des mots spécifiques
+                </p>
+                <code className="text-sm text-green-400 bg-gray-900/50 px-3 py-2 rounded-lg block">
+                  keyword:"urgent"
+                </code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Discord Preview Section */}
+        <section className="container mx-auto px-6 pb-32">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
+              Simple à Utiliser
             </h2>
-            <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-              Rejoignez des milliers d'utilisateurs qui transforment déjà leur 
-              expérience Discord avec RappelBot.
+            <p className="text-xl text-gray-400 text-center mb-16">
+              Une commande suffit pour créer un rappel
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <button className="px-12 py-4 bg-linear-to-br from-green-600 to-emerald-600 rounded-xl font-bold text-lg hover:scale-105 transition-transform">
-                Commencer Gratuitement
-              </button>
-              <button className="px-12 py-4 bg-gray-800 border-2 border-gray-700 rounded-xl font-bold text-lg hover:border-blue-500 transition-colors">
-                Voir la Démo
-              </button>
+            
+            {/* Discord Mockup */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/30 to-purple-600/30 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
+              <div className="relative backdrop-blur-2xl bg-gray-900/60 border border-white/20 rounded-3xl p-8 shadow-2xl">
+                {/* Discord Header */}
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-700">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-white font-bold">général</div>
+                    <div className="text-xs text-gray-500">Serveur RappelBot</div>
+                  </div>
+                </div>
+                
+                {/* Message */}
+                <div className="mb-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                      U
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-white font-semibold">Utilisateur</span>
+                        <span className="text-xs text-gray-500">Aujourd'hui à 14:30</span>
+                      </div>
+                      <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-3">
+                        <code className="text-blue-300">/rappel dans 30m Pause café ☕</code>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Bot Response */}
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-white font-semibold">RappelBot</span>
+                      <span className="bg-blue-600 text-xs px-2 py-0.5 rounded">BOT</span>
+                      <span className="text-xs text-gray-500">Aujourd'hui à 14:30</span>
+                    </div>
+                    <div className="backdrop-blur-lg bg-green-600/20 border border-green-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-green-400 mb-2">
+                        <TrendingUp className="w-5 h-5" />
+                        <span className="font-bold">✅ Rappel créé</span>
+                      </div>
+                      <div className="text-white mb-2">
+                        <strong>Message:</strong> Pause café ☕
+                      </div>
+                      <div className="text-gray-300">
+                        <strong>Déclencheur:</strong> Dans 30min
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
       </div>
+
+      <style>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        
+        .animate-gradient {
+          background-size: 200% auto;
+          animation: gradient 3s ease infinite;
+        }
+      `}</style>
     </div>
   );
 };
 
-export default Home;
+export default HomePage;
