@@ -55,36 +55,64 @@ function parseThreadTrigger(text) {
 
 /**
  * Extraire les informations d'un trigger temporisé
+ * Supporte des formats flexibles: "dans 30m", "dans 2h", "dans 1h 25mn"
+ * Limite maximale: 24 heures
  */
 function parseTimerTrigger(text) {
-    // Format: "dans 30m", "dans 2h", "dans 1j"
-    const timerMatch = text.match(/dans\s+(\d+)\s*(m|min|h|hr|j|d)/i);
+    // Rechercher le mot "dans" suivi de composants de temps
+    if (!text.toLowerCase().includes('dans')) return null;
 
-    if (!timerMatch) return null;
+    // Extraire tous les composants de temps (ex: "1h", "25m", "30mn")
+    const timeComponents = text.match(/(\d+)\s*(m|mn|min|h|hr)/gi);
 
-    const amount = parseInt(timerMatch[1]);
-    const unit = timerMatch[2].toLowerCase();
+    if (!timeComponents || timeComponents.length === 0) return null;
 
-    let milliseconds = 0;
+    let totalMilliseconds = 0;
 
-    switch (unit) {
-        case 'm':
-        case 'min':
-            milliseconds = amount * 60 * 1000;
-            break;
-        case 'h':
-        case 'hr':
-            milliseconds = amount * 60 * 60 * 1000;
-            break;
-        case 'j':
-        case 'd':
-            milliseconds = amount * 24 * 60 * 60 * 1000;
-            break;
+    // Parser chaque composant et additionner
+    for (const component of timeComponents) {
+        const match = component.match(/(\d+)\s*(m|mn|min|h|hr)/i);
+        if (!match) continue;
+
+        const amount = parseInt(match[1]);
+        const unit = match[2].toLowerCase();
+
+        switch (unit) {
+            case 'm':
+            case 'mn':
+            case 'min':
+                totalMilliseconds += amount * 60 * 1000;
+                break;
+            case 'h':
+            case 'hr':
+                totalMilliseconds += amount * 60 * 60 * 1000;
+                break;
+        }
+    }
+
+    // Validation: maximum 24 heures
+    const MAX_DURATION = 24 * 60 * 60 * 1000; // 24h en millisecondes
+    if (totalMilliseconds > MAX_DURATION) {
+        return {
+            error: 'La durée maximale est de 24 heures',
+            delay: null,
+            triggerAt: null
+        };
+    }
+
+    // Validation: minimum 1 minute
+    const MIN_DURATION = 60 * 1000; // 1 minute
+    if (totalMilliseconds < MIN_DURATION) {
+        return {
+            error: 'La durée minimale est de 1 minute',
+            delay: null,
+            triggerAt: null
+        };
     }
 
     return {
-        delay: milliseconds,
-        triggerAt: new Date(Date.now() + milliseconds)
+        delay: totalMilliseconds,
+        triggerAt: new Date(Date.now() + totalMilliseconds)
     };
 }
 

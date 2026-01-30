@@ -48,7 +48,7 @@ module.exports = {
                     trigger = parseTimerTrigger(triggerText);
                     if (!trigger || !trigger.delay) {
                         valid = false;
-                        errorMessage = '❌ Format invalide. Utilisez: "dans 30m", "dans 2h", "dans 1j"';
+                        errorMessage = trigger?.error || '❌ Format invalide. Utilisez: "dans 30m", "dans 2h", "dans 1h 25mn" (max 24h)';
                     }
                     break;
                 }
