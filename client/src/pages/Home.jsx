@@ -46,23 +46,16 @@ const HomePage = () => {
                 href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-glitch group hover:shadow-[0_0_20px_rgba(6,182,212,0.5)]"
+                className="group relative px-10 py-5 font-bold text-lg text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transform -skew-x-12 bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-md"
               >
-                <span className="text-content flex items-center gap-3">
-                  <Zap className="w-6 h-6 text-cyan-400 group-hover:text-white transition-colors" />
-                  Ajouter au Discord
-                </span>
-                <span className="text-content opacity-0 group-hover:opacity-100 transition-opacity">_</span>
+                <div className="flex items-center gap-3 transform skew-x-12">
+                  <span className="relative flex items-center gap-3">
+                    <Zap className="w-6 h-6 text-cyan-400 group-hover:text-white transition-colors" />
+                    Ajouter au Discord
+                  </span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">_</span>
+                </div>
               </a>
-
-              <button
-                className="flex justify-center gap-2 items-center shadow-xl text-lg text-white bg-white/10 backdrop-blur-md font-bold isolation-auto border-white/20 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-gradient-to-r before:from-cyan-500 before:to-purple-600 hover:text-white before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-10 py-5 overflow-hidden border-2 rounded-2xl group transition-all duration-300 hover:shadow-2xl hover:scale-105"
-              >
-                Documentation
-                <svg className="w-8 h-8 justify-end group-hover:rotate-90 group-hover:bg-white/20 text-white ease-linear duration-300 rounded-full border border-white/50 group-hover:border-transparent p-2 rotate-45" viewBox="0 0 16 19" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z" className="fill-white group-hover:fill-white" />
-                </svg>
-              </button>
             </div>
           </div>
         </section>
@@ -217,6 +210,27 @@ const HomePage = () => {
                 </div>
               </div>
             </div>
+            {/* Documentation Button - Hyperspace Effect */}
+            <div className="flex justify-center mt-12">
+              <button
+                className="btn-hyperspace group relative px-12 py-6 rounded-full font-bold text-xl text-white overflow-hidden border border-white/20 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(236,72,153,0.6)]"
+              >
+                <div className="absolute inset-0 bg-black opacity-80 z-0"></div>
+
+                {/* Light Particles/Streaks Container */}
+                <div className="absolute inset-0 z-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 animate-hyperspace bg-[repeating-linear-gradient(90deg,transparent,transparent_50px,rgba(255,255,255,0.1)_50px,rgba(255,255,255,0.1)_100px)]"></div>
+                  <div className="absolute inset-0 animate-hyperspace-fast bg-[repeating-linear-gradient(90deg,transparent,transparent_100px,rgba(236,72,153,0.3)_100px,rgba(236,72,153,0.3)_120px)] mix-blend-screen"></div>
+                </div>
+
+                <span className="relative z-10 flex items-center gap-3 group-hover:italic transition-all">
+                  Documentation
+                  <svg className="w-6 h-6 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </button>
+            </div>
           </div>
         </section>
       </div>
@@ -230,6 +244,21 @@ const HomePage = () => {
         .animate-gradient {
           background-size: 200% auto;
           animation: gradient 3s ease infinite;
+        }
+
+        .animate-hyperspace {
+            animation: hyperspace 0.5s linear infinite;
+            width: 200%;
+        }
+
+        .animate-hyperspace-fast {
+            animation: hyperspace 0.2s linear infinite;
+            width: 200%;
+        }
+
+        @keyframes hyperspace {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
 
         /* Glitch Button Styles */

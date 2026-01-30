@@ -39,31 +39,26 @@ const FloatingHeader = () => {
       </Link>
 
       {/* Top Right - CTA */}
+      {/* Top Right - CTA (Animated Fly-in) */}
       <a
         href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
         target="_blank"
         rel="noopener noreferrer"
-        className={`fixed top-6 right-6 z-50 transition-all duration-300 ${scrolled ? 'scale-95' : 'scale-100'}`}
+        className={`fixed top-6 right-6 z-50 transition-all duration-700 ease-out transform ${scrolled
+            ? 'translate-x-0 translate-y-0 opacity-100 scale-100'
+            : 'translate-x-[-30vw] translate-y-[30vh] opacity-0 scale-50 pointer-events-none'
+          }`}
       >
-        <div className="group relative overflow-hidden rounded-full p-[1px]">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 animate-gradient-xy"></div>
-          <div className="relative bg-black/80 backdrop-blur-xl px-6 py-2.5 rounded-full flex items-center gap-2 transition group-hover:bg-black/60">
+        <div className="bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-xl px-6 py-2.5 rounded-xl skew-x-[-12deg] shadow-lg hover:shadow-cyan-500/50 transition-shadow">
+          <div className="flex items-center gap-2 skew-x-[12deg]">
             <span className="font-bold text-white text-sm">Ajouter au Discord</span>
-            <Zap className="w-4 h-4 text-cyan-400 group-hover:text-white transition" />
+            <Zap className="w-4 h-4 text-white" />
           </div>
         </div>
       </a>
 
       <style>{`
-                @keyframes gradient-xy {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                .animate-gradient-xy {
-                    background-size: 200% 200%;
-                    animation: gradient-xy 3s ease infinite;
-                }
+                /* No custom keyframes needed for this transition, relying on Tailwind classes */
             `}</style>
     </>
   );
