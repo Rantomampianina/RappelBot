@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, User, Smile, Key, Zap, Shield, TrendingUp } from 'lucide-react';
 import BubbleParticles from '../components/BubbleParticles';
 import MouseLight from '../components/MouseLight';
 
 const HomePage = () => {
+  const [showButton, setShowButton] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowButton(true);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950 overflow-hidden">
       {/* Particle Effects */}
@@ -42,20 +52,21 @@ const HomePage = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <a
-                href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-glitch-skew group relative px-10 py-5 font-bold text-lg text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transform -skew-x-12 bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-md"
-              >
-                <div className="flex items-center gap-3 transform skew-x-12">
-                  <span className="relative flex items-center gap-3">
-                    <Zap className="w-6 h-6 text-cyan-400 group-hover:text-white transition-colors" />
+              {showButton && (
+                <a
+                  href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-glitch-fill"
+                >
+                  <span className="text flex items-center gap-3">
+                    <Zap className="w-6 h-6 text-current zap-icon" />
                     Ajouter au Discord
                   </span>
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">_</span>
-                </div>
-              </a>
+                  <span className="text-decoration"> _</span>
+                  <span className="decoration">⇒</span>
+                </a>
+              )}
             </div>
           </div>
         </section>
@@ -250,6 +261,92 @@ const HomePage = () => {
           animation: gradient 3s ease infinite;
         }
 
+        /* Glitch Fill Button Styles */
+        .btn-glitch-fill {
+          display: inline-flex;
+          align-items: center;
+          font-family: 'VT323', monospace;
+          border: 2px solid rgb(147, 51, 234);
+          color: rgb(255, 255, 255);
+          padding: 20px 30px;
+          min-width: 250px;
+          line-height: 1.5em;
+          white-space: nowrap;
+          text-transform: uppercase;
+          cursor: pointer;
+          border-radius: 15px;
+          background: linear-gradient(to right, rgba(147, 51, 234, 0.9), rgba(37, 99, 235, 0.9));
+          backdrop-filter: blur(10px);
+          font-size: 1.125rem;
+          font-weight: 700;
+          text-decoration: none;
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s ease;
+          animation: btn-appear 0.5s ease-out forwards;
+        }
+
+        @keyframes btn-appear {
+          0% {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        .btn-glitch-fill .text,
+        .btn-glitch-fill .decoration {
+          display: inline-block;
+        }
+
+        .btn-glitch-fill .text {
+          flex: 1;
+        }
+
+        .btn-glitch-fill .decoration {
+          float: right;
+          margin-left: 10px;
+        }
+
+        .btn-glitch-fill .zap-icon {
+          transition: all 0.3s ease;
+        }
+
+        .btn-glitch-fill:hover,
+        .btn-glitch-fill:focus {
+          animation-name: glitch;
+          animation-duration: 0.2s;
+          background-color: yellow;
+          color: black;
+          border: 2px solid yellow;
+          transform: scale(1.05);
+          box-shadow: 0 0 30px rgba(234, 179, 8, 0.5);
+        }
+
+        .btn-glitch-fill:hover .zap-icon {
+          color: black;
+        }
+
+        .btn-glitch-fill:hover .text-decoration,
+        .btn-glitch-fill:hover .decoration {
+          animation-name: blink;
+          animation-duration: 0.1s;
+          animation-iteration-count: infinite;
+        }
+
+        .btn-glitch-fill:active {
+          background: none;
+          color: yellow;
+        }
+
+        .btn-glitch-fill:active .text-decoration,
+        .btn-glitch-fill:active .decoration {
+          animation-name: none;
+        }
+
         .animate-hyperspace {
             animation: hyperspace 0.5s linear infinite;
             width: 200%;
@@ -303,28 +400,28 @@ const HomePage = () => {
 
         @keyframes glitch {
           25% {
-            background-color: rgba(147, 51, 234, 0.5); /* Purple-600 */
-            transform: translateX(-5px);
-            letter-spacing: 2px;
+            background-color: red;
+            transform: translateX(-10px);
+            letter-spacing: 10px;
           }
 
           35% {
-            background-color: rgba(6, 182, 212, 0.5); /* Cyan-500 */
-            transform: translate(5px);
+            background-color: green;
+            transform: translate(10px);
           }
 
           59% {
-            opacity: 0.8;
+            opacity: 0;
           }
 
           60% {
-            background-color: rgba(37, 99, 235, 0.5); /* Blue-600 */
-            transform: translate(-5px);
-            filter: blur(2px);
+            background-color: blue;
+            transform: translate(-10px);
+            filter: blur(5px);
           }
 
           100% {
-            background-color: rgba(6, 182, 212, 0.2);
+            background-color: yellow;
             filter: blur(0);
           }
         }
