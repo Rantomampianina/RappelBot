@@ -277,6 +277,18 @@ client.on('interactionCreate', async (interaction) => {
             }
 
             await command.execute(interaction);
+        } else if (interaction.isAutocomplete()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command || !command.autocomplete) {
+                console.error(`❌ Autocomplete non géré pour la commande ${interaction.commandName}`);
+                return;
+            }
+
+            try {
+                await command.autocomplete(interaction);
+            } catch (error) {
+                console.error('❌ Erreur autocomplete:', error);
+            }
         }
     } catch (error) {
         console.error('❌ Erreur interaction:', error);

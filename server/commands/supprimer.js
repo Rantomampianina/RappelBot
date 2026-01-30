@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { deleteReminder, getReminder } = require('../store/reminders');
+const { deleteReminder, getReminder, getUserReminders } = require('../store/reminders');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,7 +8,49 @@ module.exports = {
         .addStringOption(option =>
             option.setName('id')
                 .setDescription('ID du rappel à supprimer')
-                .setRequired(true)),
+                .setRequired(true)
+                .setAutocomplete(true)),
+
+    async autocomplete(interaction) {
+        try {
+            const focusedValue = interaction.options.getFocused();
+            const userId = interaction.user.id;
+
+            // Récupérer les rappels de l'utilisateur
+            const userReminders = getUserReminders(userId);
+
+            if (!userReminders || userReminders.length === 0) {
+                return interaction.respond([]);
+            }
+
+            // Filtrer les rappels qui correspondent à la recherche
+            const filtered = userReminders.filter(reminder => {
+                const searchLower = focusedValue.toLowerCase();
+                return reminder.message.toLowerCase().includes(searchLower) ||
+                    reminder.id.toLowerCase().includes(searchLower);
+            });
+
+            // Limiter à 25 résultats (limite Discord)
+            // Format: "Message... (ID court)"
+            const choices = filtered.slice(0, 25).map(reminder => {
+                let label = reminder.message;
+                if (label.length > 50) label = label.substring(0, 47) + '...';
+
+                // Ajouter le type ou l'ID court pour info
+                label = `${label} (${reminder.type})`;
+
+                return {
+                    name: label,
+                    value: reminder.id
+                };
+            });
+
+            await interaction.respond(choices);
+        } catch (error) {
+            console.error('❌ Erreur autocomplete supprimer:', error);
+            // Ne pas répondre en cas d'erreur dans l'autocomplete
+        }
+    },
 
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
