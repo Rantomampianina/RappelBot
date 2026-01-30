@@ -106,7 +106,7 @@ module.exports = {
 
             // Pour les timers, planifier immédiatement
             if (type === 'timer' && trigger.delay) {
-                setTimeout(async () => {
+                const timeoutId = setTimeout(async () => {
                     try {
                         const user = await interaction.client.users.fetch(userId);
                         const embed = new EmbedBuilder()
@@ -123,6 +123,10 @@ module.exports = {
                         console.error('❌ Erreur envoi rappel timer:', error);
                     }
                 }, trigger.delay);
+
+                // Enregistrer le timeout ID pour pouvoir l'annuler si besoin (suppression)
+                const { setReminderTimeout } = require('../store/reminders');
+                setReminderTimeout(reminder.id, timeoutId);
             }
 
             // Réponse de confirmation

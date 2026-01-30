@@ -123,10 +123,28 @@ function deleteReminder(id) {
         }
     }
 
+    // Supprimer le timeout si existant
+    if (reminder.timeout) {
+        clearTimeout(reminder.timeout);
+        console.log(`⏱️ Timeout annulé pour le rappel: ${id}`);
+    }
+
     // Supprimer le rappel
     reminders.delete(id);
     console.log(`🗑️ Rappel supprimé: ${id}`);
     return true;
+}
+
+/**
+ * Associer un timeout à un rappel
+ */
+function setReminderTimeout(id, timeout) {
+    const reminder = reminders.get(id);
+    if (reminder) {
+        reminder.timeout = timeout;
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -258,5 +276,6 @@ module.exports = {
     cleanOldReminders,
     getStats,
     exportToJSON,
-    importFromJSON
+    importFromJSON,
+    setReminderTimeout
 };

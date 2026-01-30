@@ -46,22 +46,22 @@ const HomePage = () => {
                 href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative px-10 py-5 rounded-2xl font-bold text-lg text-white overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                className="btn-glitch group hover:shadow-[0_0_20px_rgba(6,182,212,0.5)]"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 transition-transform duration-300 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative flex items-center gap-3">
-                  <Zap className="w-6 h-6" />
+                <span className="text-content flex items-center gap-3">
+                  <Zap className="w-6 h-6 text-cyan-400 group-hover:text-white transition-colors" />
                   Ajouter au Discord
                 </span>
+                <span className="text-content opacity-0 group-hover:opacity-100 transition-opacity">_</span>
               </a>
 
               <button
-                className="group px-10 py-5 rounded-2xl font-bold text-lg text-white backdrop-blur-lg bg-white/10 border-2 border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                className="flex justify-center gap-2 items-center shadow-xl text-lg text-white bg-white/10 backdrop-blur-md font-bold isolation-auto border-white/20 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-gradient-to-r before:from-cyan-500 before:to-purple-600 hover:text-white before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-10 py-5 overflow-hidden border-2 rounded-2xl group transition-all duration-300 hover:shadow-2xl hover:scale-105"
               >
-                <span className="flex items-center gap-3">
-                  Documentation
-                </span>
+                Documentation
+                <svg className="w-8 h-8 justify-end group-hover:rotate-90 group-hover:bg-white/20 text-white ease-linear duration-300 rounded-full border border-white/50 group-hover:border-transparent p-2 rotate-45" viewBox="0 0 16 19" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z" className="fill-white group-hover:fill-white" />
+                </svg>
               </button>
             </div>
           </div>
@@ -230,6 +230,76 @@ const HomePage = () => {
         .animate-gradient {
           background-size: 200% auto;
           animation: gradient 3s ease infinite;
+        }
+
+        /* Glitch Button Styles */
+        .btn-glitch {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: white;
+          padding: 20px 40px;
+          min-width: 175px;
+          font-weight: 700;
+          font-size: 1.125rem;
+          line-height: 1.5em;
+          white-space: nowrap;
+          cursor: pointer;
+          border-radius: 1rem;
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .btn-glitch:hover,
+        .btn-glitch:focus {
+          animation-name: glitch;
+          animation-duration: 0.2s;
+          background-color: transparent;
+          border-color: rgba(6, 182, 212, 0.8); /* Cyan-500 */
+        }
+
+        .btn-glitch:hover .text-content {
+          animation-name: blink;
+          animation-duration: 0.1s;
+          animation-iteration-count: infinite;
+        }
+
+        @keyframes glitch {
+          25% {
+            background-color: rgba(147, 51, 234, 0.5); /* Purple-600 */
+            transform: translateX(-5px);
+            letter-spacing: 2px;
+          }
+
+          35% {
+            background-color: rgba(6, 182, 212, 0.5); /* Cyan-500 */
+            transform: translate(5px);
+          }
+
+          59% {
+            opacity: 0.8;
+          }
+
+          60% {
+            background-color: rgba(37, 99, 235, 0.5); /* Blue-600 */
+            transform: translate(-5px);
+            filter: blur(2px);
+          }
+
+          100% {
+            background-color: rgba(6, 182, 212, 0.2);
+            filter: blur(0);
+          }
+        }
+
+        @keyframes blink {
+          50% {
+            opacity: 0.5;
+          }
         }
       `}</style>
     </div>
