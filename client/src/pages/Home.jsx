@@ -46,7 +46,7 @@ const HomePage = () => {
                 href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative px-10 py-5 font-bold text-lg text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transform -skew-x-12 bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-md"
+                className="btn-glitch-skew group relative px-10 py-5 font-bold text-lg text-white transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transform -skew-x-12 bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-md"
               >
                 <div className="flex items-center gap-3 transform skew-x-12">
                   <span className="relative flex items-center gap-3">
@@ -219,8 +219,12 @@ const HomePage = () => {
 
                 {/* Light Particles/Streaks Container */}
                 <div className="absolute inset-0 z-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute inset-0 animate-hyperspace bg-[repeating-linear-gradient(90deg,transparent,transparent_50px,rgba(255,255,255,0.1)_50px,rgba(255,255,255,0.1)_100px)]"></div>
-                  <div className="absolute inset-0 animate-hyperspace-fast bg-[repeating-linear-gradient(90deg,transparent,transparent_100px,rgba(236,72,153,0.3)_100px,rgba(236,72,153,0.3)_120px)] mix-blend-screen"></div>
+                  {/* Horizontal Streaks (Stronger Colors) */}
+                  <div className="absolute inset-0 animate-hyperspace bg-[repeating-linear-gradient(90deg,transparent,transparent_50px,rgba(255,255,255,0.4)_50px,rgba(255,255,255,0.4)_100px)]"></div>
+                  <div className="absolute inset-0 animate-hyperspace-fast bg-[repeating-linear-gradient(90deg,transparent,transparent_100px,rgba(236,72,153,0.8)_100px,rgba(236,72,153,0.8)_120px)] mix-blend-screen"></div>
+
+                  {/* Vertical Streaks/Grid */}
+                  <div className="absolute inset-0 animate-hyperspace bg-[repeating-linear-gradient(0deg,transparent,transparent_40px,rgba(255,255,255,0.1)_40px,rgba(255,255,255,0.1)_41px)]"></div>
                 </div>
 
                 <span className="relative z-10 flex items-center gap-3 group-hover:italic transition-all">
@@ -329,6 +333,46 @@ const HomePage = () => {
           50% {
             opacity: 0.5;
           }
+        }
+        @keyframes glitch-skew {
+            25% {
+                background-color: rgba(147, 51, 234, 0.5);
+                transform: skewX(-12deg) translateX(-5px);
+                letter-spacing: 2px;
+            }
+            35% {
+                background-color: rgba(6, 182, 212, 0.5);
+                transform: skewX(-12deg) translate(5px);
+            }
+            59% { opacity: 0.8; }
+            60% {
+                background-color: rgba(37, 99, 235, 0.5);
+                transform: skewX(-12deg) translate(-5px);
+                filter: blur(2px);
+            }
+            100% {
+                background-color: rgba(147, 51, 234, 0.9);
+                filter: blur(0);
+                transform: skewX(-12deg);
+            }
+        }
+
+        .btn-glitch-skew:hover,
+        .btn-glitch-skew:focus {
+            animation-name: glitch-skew;
+            animation-duration: 0.2s;
+        }
+
+        .btn-glitch-skew:hover .text-content {
+             animation-name: blink;
+             animation-duration: 0.1s;
+             animation-iteration-count: infinite;
+        }
+
+        /* Legacy Glitch Styles (kept if needed) */
+        .btn-glitch {
+          display: inline-flex;
+          /* ... previous styles ... */
         }
       `}</style>
     </div>

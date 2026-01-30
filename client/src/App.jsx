@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import HomePage from './pages/Home';
 import DashboardPage from './pages/Dashboard';
@@ -7,10 +7,12 @@ import DashboardPage from './pages/Dashboard';
 // Floating Header Component
 const FloatingHeader = () => {
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const isDashboard = location.pathname === '/dashboard';
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 450);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -40,22 +42,25 @@ const FloatingHeader = () => {
 
       {/* Top Right - CTA */}
       {/* Top Right - CTA (Animated Fly-in) */}
-      <a
-        href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`fixed top-6 right-6 z-50 transition-all duration-700 ease-out transform ${scrolled
+      {/* Top Right - CTA (Animated Fly-in) */}
+      {!isDashboard && (
+        <a
+          href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`fixed top-6 right-6 z-50 transition-all duration-700 ease-out transform ${scrolled
             ? 'translate-x-0 translate-y-0 opacity-100 scale-100'
             : 'translate-x-[-30vw] translate-y-[30vh] opacity-0 scale-50 pointer-events-none'
-          }`}
-      >
-        <div className="bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-xl px-6 py-2.5 rounded-xl skew-x-[-12deg] shadow-lg hover:shadow-cyan-500/50 transition-shadow">
-          <div className="flex items-center gap-2 skew-x-[12deg]">
-            <span className="font-bold text-white text-sm">Ajouter au Discord</span>
-            <Zap className="w-4 h-4 text-white" />
+            }`}
+        >
+          <div className="bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-xl px-6 py-2.5 rounded-xl skew-x-[-12deg] shadow-lg hover:shadow-cyan-500/50 transition-shadow">
+            <div className="flex items-center gap-2 skew-x-[12deg]">
+              <span className="font-bold text-white text-sm">Ajouter au Discord</span>
+              <Zap className="w-4 h-4 text-white" />
+            </div>
           </div>
-        </div>
-      </a>
+        </a>
+      )}
 
       <style>{`
                 /* No custom keyframes needed for this transition, relying on Tailwind classes */
