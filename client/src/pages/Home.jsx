@@ -43,7 +43,9 @@ const HomePage = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <a
-                href="#"
+                href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group relative px-10 py-5 rounded-2xl font-bold text-lg text-white overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-600 transition-transform duration-300 group-hover:scale-110" />
@@ -54,14 +56,13 @@ const HomePage = () => {
                 </span>
               </a>
 
-              <Link
-                to="/dashboard"
+              <button
                 className="group px-10 py-5 rounded-2xl font-bold text-lg text-white backdrop-blur-lg bg-white/10 border-2 border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
                 <span className="flex items-center gap-3">
-                  Voir les Commandes
+                  Documentation
                 </span>
-              </Link>
+              </button>
             </div>
           </div>
         </section>

@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import HomePage from './pages/Home';
 import DashboardPage from './pages/Dashboard';
-import SecretPage from './pages/SecretPage';
 
-// Floating Header Component to handle location-based logic if needed
+// Floating Header Component
 const FloatingHeader = () => {
   const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,8 +21,7 @@ const FloatingHeader = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Don't show header on secret page
-  if (location.pathname === '/galaxy') return null;
+
 
   return (
     <>
@@ -43,7 +40,9 @@ const FloatingHeader = () => {
 
       {/* Top Right - CTA */}
       <a
-        href="#"
+        href="https://discord.com/oauth2/authorize?client_id=1416353909395558451"
+        target="_blank"
+        rel="noopener noreferrer"
         className={`fixed top-6 right-6 z-50 transition-all duration-300 ${scrolled ? 'scale-95' : 'scale-100'}`}
       >
         <div className="group relative overflow-hidden rounded-full p-[1px]">
@@ -82,7 +81,6 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/galaxy" element={<SecretPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
